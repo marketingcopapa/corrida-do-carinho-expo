@@ -1,6 +1,6 @@
 {
-  "name": "Corrida do Carinho — COPAPA",
-  "short_name": "Corrida do Carinho",
+  "name": "Conquista do Carinho — COPAPA",
+  "short_name": "Conquista do Carinho",
   "description": "Jogo oficial das marcas COPAPA: Carinho, Plus, Bom Pety e Classy.",
   "start_url": "./index.html?estande",
   "display": "fullscreen",
