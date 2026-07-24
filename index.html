@@ -212,6 +212,10 @@
     .slot{width:clamp(46px,9vh,90px);height:clamp(58px,11vh,112px);font-size:clamp(30px,7vh,72px);}
     #teclado button{font-size:clamp(15px,3.4vh,32px);padding:.28em 0;}
   }
+
+  /* botoes de fim sempre visiveis (rodape fixo, qualquer altura) */
+  #gameover{padding-bottom:0;}
+  #gameover .botoes-fim{position:sticky;bottom:0;width:100%;margin-top:auto;padding:2.2vmin 0 2.6vmin;background:linear-gradient(to top,var(--marinho) 62%,rgba(10,30,74,0));}
 </style>
 </head>
 <body>
