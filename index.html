@@ -123,6 +123,12 @@
   #ranking td:nth-child(2){letter-spacing:.06em;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;max-width:10em;}
   #ranking td:last-child{text-align:right;color:var(--creme);}
   #ranking tr.voce td{color:var(--verde-copapa);}
+  #ranking td.aviso{opacity:.7;text-align:center;}
+  #ranking tr.podio td{padding:.24em .3em;}
+  #ranking tr.podio td:first-child{font-size:1.15em;}
+  #ranking tr.separador td{color:rgba(248,245,238,.42);text-align:center;font-size:.5em;letter-spacing:.34em;text-indent:.34em;font-weight:700;padding:.7em 0 .25em;}
+  #ranking tr.minha td{color:var(--dourado);font-weight:900;text-align:center;padding-top:.45em;border-top:2px solid rgba(201,162,75,.35);}
+  #ranking tr.minha.voce td{color:var(--verde-copapa);border-top-color:rgba(29,158,95,.5);}
   .botoes-fim{display:flex;gap:16px;margin-top:3.5vmin;flex-wrap:wrap;justify-content:center;}
 
   /* ============ INICIAIS ============ */
@@ -367,7 +373,7 @@ const EVENTO = {
   projetoFirebase: 'copapa-corrida',              // ex.: 'copapa-corrida'   ← PREENCHER
   apiKey: 'AIzaSyBvadiUFICqo0VcMjazhWeNCFhTHA93wY0',                       // Web API Key do Firebase ← PREENCHER
   fusoHorario: 'America/Sao_Paulo', // o ranking vira à meia-noite deste fuso
-  tamanhoRanking: 5                 // linhas exibidas na tela de fim de jogo
+  tamanhoRanking: 10                 // linhas exibidas na tela de fim de jogo
 };
 const MODO_NUVEM = !!(EVENTO.ativo && EVENTO.projetoFirebase && EVENTO.apiKey);
 /* Nos tablets do estande, abra o jogo com ?estande no fim do endereço:
@@ -1035,7 +1041,7 @@ function telaFinal(pts, nomeJogador){
   tb.innerHTML = '';
   if (MODO_NUVEM && jogador){
     tb.innerHTML = '<tr><td colspan="3" style="opacity:.7;text-align:center">Carregando ranking do dia…</td></tr>';
-    montarRankingNuvem(tb, pts, nomeJogador);
+    montarRankingNuvem(tb, pts);
   } else if (ranking.length === 0){
     tb.innerHTML = '<tr><td colspan="3" style="opacity:.7;text-align:center">Seja o primeiro do ranking!</td></tr>';
   } else {
@@ -1052,32 +1058,83 @@ function telaFinal(pts, nomeJogador){
   mostrar('gameover');
 }
 
-async function montarRankingNuvem(tb, pts, nomeJogador){
-  let lista;
+async function contarRanking(soMelhores, pts){
+  const sq = { from:[{collectionId:'ranking_' + diaHoje()}] };
+  if (soMelhores){
+    sq.where = {fieldFilter:{field:{fieldPath:'pontos'}, op:'GREATER_THAN',
+      value:{integerValue:String(Math.round(pts))}}};
+  }
+  const body = {structuredAggregationQuery:{ structuredQuery: sq,
+    aggregations:[{alias:'c', count:{}}] }};
+  const r = await fetch(URL_DOCS() + ':runAggregationQuery?key=' + EVENTO.apiKey, {
+    method:'POST', headers:{'Content-Type':'application/json'}, body: JSON.stringify(body)});
+  if (!r.ok) throw new Error('COUNT HTTP ' + r.status);
+  const j = await r.json();
+  const c = j && j[0] && j[0].result && j[0].result.aggregateFields && j[0].result.aggregateFields.c;
+  return c ? parseInt(c.integerValue, 10) : 0;
+}
+
+async function montarRankingNuvem(tb, pts){
+  const meuNome = nomeRanking(jogador.nome);
+  const meuTail = jogador.instagram || '';
+  const minhaChave = meuNome + '|' + meuTail;
+  let lista, posGeral = null, total = null;
   try{
     await processarFila();                       // garante que a partida de agora subiu
-    lista = (await buscarRankingDia()).slice(0, EVENTO.tamanhoRanking);
+    const bruto = await buscarRankingDia();
+    // um jogador por linha: mantem a melhor pontuacao de cada pessoa
+    const vistos = new Set(); lista = [];
+    for (const r of bruto){
+      const ch = nomeRanking(r.nome) + '|' + (r.instagram || '');
+      if (vistos.has(ch)) continue;
+      vistos.add(ch); lista.push(r);
+    }
+    // posicao da jogada atual entre TODAS as jogadas do dia (escalavel via COUNT)
+    try{
+      total = await contarRanking(false, pts);
+      posGeral = (await contarRanking(true, pts)) + 1;   // quantas jogadas fizeram mais + 1
+      if (total && posGeral > total) posGeral = total;   // seguranca contra atraso do banco
+    }catch(e){ posGeral = null; total = null; }
   }catch(e){
-    tb.innerHTML = '<tr><td colspan="3" style="opacity:.7;text-align:center">' +
-      'Sem internet agora — sua pontuação entra no ranking assim que a rede voltar.</td></tr>';
+    tb.innerHTML = '<tr><td colspan="3" class="aviso">' +
+      'Sem internet agora — sua pontuacao entra no ranking assim que a rede voltar.</td></tr>';
     return;
   }
-  if (!telas.gameover.classList.contains('ativa')) return;   // jogador já saiu da tela
+  if (!telas.gameover.classList.contains('ativa')) return;   // jogador ja saiu da tela
   tb.innerHTML = '';
   if (!lista.length){
-    tb.innerHTML = '<tr><td colspan="3" style="opacity:.7;text-align:center">Seja o primeiro do ranking de hoje!</td></tr>';
+    tb.innerHTML = '<tr><td colspan="3" class="aviso">Seja o primeiro do ranking de hoje!</td></tr>';
     return;
   }
-  let marcou = false;
-  lista.forEach((r, i) => {
+
+  const medalhas = ['🥇','🥈','🥉'];
+  const topN = lista.slice(0, EVENTO.tamanhoRanking);
+  let indiceEu = -1;
+
+  topN.forEach((r, i) => {
     const tr = document.createElement('tr');
-    if (!marcou && nomeJogador && nomeRanking(r.nome) === nomeJogador && r.pontos === pts){
-      tr.className = 'voce'; marcou = true;
-    }
-    tr.innerHTML = '<td>' + (i+1) + 'º</td><td>' + escapeHtml(nomeRanking(r.nome)) +
+    const ch = nomeRanking(r.nome) + '|' + (r.instagram || '');
+    if (indiceEu < 0 && ch === minhaChave){ tr.className = 'voce'; indiceEu = i; }
+    if (i < 3) tr.classList.add('podio');
+    const col1 = i < 3 ? medalhas[i] : (i + 1) + 'º';
+    tr.innerHTML = '<td>' + col1 + '</td><td>' + escapeHtml(nomeRanking(r.nome)) +
       '</td><td>' + r.pontos.toLocaleString('pt-BR') + '</td>';
     tb.appendChild(tr);
   });
+
+  // linha VOCE — sempre visivel, mesmo se o jogador estiver em ultimo
+  const eu = document.createElement('tr');
+  eu.className = 'minha';
+  if (indiceEu >= 0){
+    eu.classList.add('voce');
+    eu.innerHTML = '<td colspan="3">🎉 VOCÊ está no TOP ' + EVENTO.tamanhoRanking + ' de hoje!</td>';
+  } else if (posGeral){
+    eu.innerHTML = '<td colspan="3">Sua colocação: ' + posGeral + 'º de ' +
+      total + ' jogadas hoje</td>';
+  } else {
+    eu.innerHTML = '<td colspan="3">Sua pontuação entrou no ranking de hoje!</td>';
+  }
+  tb.appendChild(eu);
 }
 
 /* ---------- entrada de iniciais ---------- */
