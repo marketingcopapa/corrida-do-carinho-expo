@@ -1,0 +1,44 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Painel da Equipe — Conquista do Carinho</title>
+<style>
+body{margin:0;min-height:100vh;background:#0a1e4a;color:#f8f5ee;font-family:'Segoe UI',system-ui,sans-serif;display:flex;flex-direction:column;align-items:center;padding:24px}
+h1{font-size:clamp(22px,5vw,40px);margin:8px 0 2px;text-transform:uppercase;letter-spacing:.04em}
+.sub{color:#c9a24b;font-weight:700;margin-bottom:20px}
+.card{background:rgba(0,10,35,.5);border-radius:16px;padding:20px;max-width:560px;width:100%;border-bottom:4px solid #0040a0}
+label{display:block;font-size:14px;letter-spacing:.08em;margin:14px 0 4px;color:#c9a24b}
+input,textarea{width:100%;box-sizing:border-box;border:none;border-radius:10px;padding:12px;font-size:17px;font-family:inherit}
+textarea{min-height:130px}
+button{margin-top:18px;width:100%;background:#1d9e5f;color:#fff;border:none;border-radius:999px;padding:14px;font-size:20px;font-weight:800;letter-spacing:.04em;cursor:pointer}
+button:active{transform:scale(.98)}
+.dica{font-size:13px;opacity:.75;margin-top:14px;line-height:1.5}
+</style>
+</head>
+<body>
+<h1>Painel da Equipe</h1>
+<div class="sub">CONQUISTA DO CARINHO · EXPO PADUA</div>
+<div class="card">
+<label>NOME DO VENCEDOR</label>
+<input id="nome" placeholder="Maria Silva">
+<label>WHATSAPP (copie do Firebase, so numeros)</label>
+<input id="fone" placeholder="22999990000" inputmode="numeric">
+<label>MENSAGEM</label>
+<textarea id="msg">Parabens, {NOME}! Voce foi um dos vencedores de hoje da Conquista do Carinho, na Expo Padua! Venha ate o estande da COPAPA retirar seu premio ate as 22h15. Equipe COPAPA - Linha Carinho.</textarea>
+<button id="btn">ABRIR WHATSAPP COM A MENSAGEM</button>
+<div class="dica">Como usar: no Firebase (colecao contatos), copie o numero do vencedor do dia, cole aqui, confira o nome e toque no botao. O WhatsApp abre com a mensagem pronta - e so enviar. Em caso de empate no placar, vence quem atingiu a pontuacao primeiro (o ranking ja ordena assim).</div>
+</div>
+<script>
+document.getElementById('btn').addEventListener('click', function(){
+  var d = (document.getElementById('fone').value || '').replace(/\D+/g, '');
+  if (d.length < 10){ alert('Numero incompleto: use DDD + numero'); return; }
+  if (d.length <= 11) d = '55' + d;
+  var nome = (document.getElementById('nome').value || '').trim().split(' ')[0] || 'jogador(a)';
+  var msg = document.getElementById('msg').value.replace('{NOME}', nome);
+  window.open('https://wa.me/' + d + '?text=' + encodeURIComponent(msg), '_blank');
+});
+</script>
+</body>
+</html>
