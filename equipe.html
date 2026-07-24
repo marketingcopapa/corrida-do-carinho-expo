@@ -8,19 +8,36 @@
 body{margin:0;min-height:100vh;background:#0a1e4a;color:#f8f5ee;font-family:'Segoe UI',system-ui,sans-serif;display:flex;flex-direction:column;align-items:center;padding:24px}
 h1{font-size:clamp(22px,5vw,40px);margin:8px 0 2px;text-transform:uppercase;letter-spacing:.04em}
 .sub{color:#c9a24b;font-weight:700;margin-bottom:20px}
-.card{background:rgba(0,10,35,.5);border-radius:16px;padding:20px;max-width:560px;width:100%;border-bottom:4px solid #0040a0}
+.card{background:rgba(0,10,35,.5);border-radius:16px;padding:20px;max-width:560px;width:100%;border-bottom:4px solid #0040a0;margin-bottom:18px;box-sizing:border-box}
+h2{font-size:15px;letter-spacing:.1em;color:#c9a24b;margin:0 0 10px;text-transform:uppercase}
+.venc{display:flex;align-items:center;gap:10px;background:rgba(255,255,255,.06);border-radius:12px;padding:10px 12px;margin-bottom:8px}
+.venc .pos{font-size:22px;font-weight:900;color:#c9a24b;min-width:34px}
+.venc .info{flex:1}
+.venc .nome{font-weight:800;font-size:17px}
+.venc .det{font-size:13px;opacity:.8}
+.venc button{width:auto;margin:0;padding:8px 14px;font-size:13px}
 label{display:block;font-size:14px;letter-spacing:.08em;margin:14px 0 4px;color:#c9a24b}
 input,textarea{width:100%;box-sizing:border-box;border:none;border-radius:10px;padding:12px;font-size:17px;font-family:inherit}
-textarea{min-height:130px}
-button{margin-top:18px;width:100%;background:#1d9e5f;color:#fff;border:none;border-radius:999px;padding:14px;font-size:20px;font-weight:800;letter-spacing:.04em;cursor:pointer}
+textarea{min-height:120px}
+button{margin-top:14px;width:100%;background:#1d9e5f;color:#fff;border:none;border-radius:999px;padding:14px;font-size:18px;font-weight:800;letter-spacing:.04em;cursor:pointer}
 button:active{transform:scale(.98)}
-.dica{font-size:13px;opacity:.75;margin-top:14px;line-height:1.5}
+.dica{font-size:13px;opacity:.75;margin-top:12px;line-height:1.5}
+#status{font-size:14px;opacity:.85}
 </style>
 </head>
 <body>
 <h1>Painel da Equipe</h1>
 <div class="sub">CONQUISTA DO CARINHO · EXPO PADUA</div>
+
 <div class="card">
+<h2>Top 3 de hoje — <span id="dia"></span></h2>
+<div id="status">Carregando o ranking do dia...</div>
+<div id="lista"></div>
+<div class="dica">Os 3 primeiros do ranking oficial (tablets do estande), ja com desempate por quem pontuou primeiro. Toque em USAR para preencher a mensagem. Por seguranca (LGPD), o numero completo fica so no Firebase (colecao contatos) - confira pelo "final XX" ao copiar.</div>
+</div>
+
+<div class="card">
+<h2>Enviar WhatsApp de parabens</h2>
 <label>NOME DO VENCEDOR</label>
 <input id="nome" placeholder="Maria Silva">
 <label>WHATSAPP (copie do Firebase, so numeros)</label>
@@ -28,9 +45,75 @@ button:active{transform:scale(.98)}
 <label>MENSAGEM</label>
 <textarea id="msg">Parabens, {NOME}! Voce foi um dos vencedores de hoje da Conquista do Carinho, na Expo Padua! Venha ate o estande da COPAPA retirar seu premio ate as 22h15. Equipe COPAPA - Linha Carinho.</textarea>
 <button id="btn">ABRIR WHATSAPP COM A MENSAGEM</button>
-<div class="dica">Como usar: no Firebase (colecao contatos), copie o numero do vencedor do dia, cole aqui, confira o nome e toque no botao. O WhatsApp abre com a mensagem pronta - e so enviar. Em caso de empate no placar, vence quem atingiu a pontuacao primeiro (o ranking ja ordena assim).</div>
 </div>
+
 <script>
+function diaHoje(){
+  try { return new Intl.DateTimeFormat('en-CA', { timeZone: 'America/Sao_Paulo' }).format(new Date()); }
+  catch(e){ return new Date().toISOString().slice(0, 10); }
+}
+function esc(s){ var d = document.createElement('div'); d.textContent = String(s); return d.innerHTML; }
+
+async function carregarTop3(){
+  var st = document.getElementById('status');
+  try {
+    var src = await (await fetch('ranking.html?v=' + Date.now())).text();
+    var mp = src.match(/projetoFirebase:\s*'([^']+)'/);
+    var mk = src.match(/apiKey:\s*'([^']+)'/);
+    if (!mp || !mk){ st.textContent = 'Configuracao do Firebase nao encontrada.'; return; }
+    var dia = diaHoje();
+    document.getElementById('dia').textContent = dia.split('-').reverse().join('/');
+    var base = 'https://firestore.googleapis.com/v1/projects/' + mp[1] + '/databases/(default)/documents/ranking_' + dia;
+    var docs = [], token = '', guarda = 0;
+    do {
+      var url = base + '?pageSize=300&key=' + mk[1] + (token ? '&pageToken=' + token : '');
+      var js = await (await fetch(url)).json();
+      docs = docs.concat(js.documents || []);
+      token = js.nextPageToken || '';
+      guarda++;
+    } while (token && guarda < 10);
+    var lista = docs.map(function(d){
+      var f = d.fields || {};
+      return {
+        nome: f.nome ? f.nome.stringValue : '???',
+        dig: f.instagram ? f.instagram.stringValue : '',
+        pontos: f.pontos ? parseInt(f.pontos.integerValue, 10) : 0,
+        origem: f.origem ? f.origem.stringValue : '',
+        criadoEm: f.criadoEm ? parseInt(f.criadoEm.integerValue, 10) : 0
+      };
+    }).filter(function(r){ return r.origem === 'tablet' && r.pontos > 0; });
+    lista.sort(function(a, b){ return b.pontos - a.pontos || a.criadoEm - b.criadoEm; });
+    var vistos = {}, top = [];
+    for (var i = 0; i < lista.length && top.length < 3; i++){
+      var ch = lista[i].nome + '|' + lista[i].dig;
+      if (vistos[ch]) continue;
+      vistos[ch] = 1; top.push(lista[i]);
+    }
+    var el = document.getElementById('lista');
+    if (!top.length){ st.textContent = 'Ninguem jogou nos tablets hoje ainda.'; return; }
+    st.textContent = '';
+    el.innerHTML = top.map(function(r, i){
+      var d2 = /^[0-9]{2}$/.test(r.dig) ? 'WhatsApp final •• ' + r.dig : (r.dig ? '@' + esc(r.dig) : '');
+      return '<div class="venc"><div class="pos">' + (i + 1) + 'º</div>' +
+        '<div class="info"><div class="nome">' + esc(r.nome) + '</div>' +
+        '<div class="det">' + r.pontos.toLocaleString('pt-BR') + ' pts · ' + d2 + '</div></div>' +
+        '<button data-i="' + i + '">USAR</button></div>';
+    }).join('');
+    el.querySelectorAll('button').forEach(function(b){
+      b.addEventListener('click', function(){
+        var r = top[parseInt(b.getAttribute('data-i'), 10)];
+        document.getElementById('nome').value = r.nome;
+        document.getElementById('fone').value = '';
+        document.getElementById('fone').placeholder = 'cole o numero (final ' + r.dig + ')';
+        document.getElementById('fone').focus();
+        window.scrollTo({ top: document.body.scrollHeight, behavior: 'smooth' });
+      });
+    });
+  } catch(e){ st.textContent = 'Erro ao carregar o ranking: ' + e.message; }
+}
+carregarTop3();
+setInterval(carregarTop3, 60000);
+
 document.getElementById('btn').addEventListener('click', function(){
   var d = (document.getElementById('fone').value || '').replace(/\D+/g, '');
   if (d.length < 10){ alert('Numero incompleto: use DDD + numero'); return; }
