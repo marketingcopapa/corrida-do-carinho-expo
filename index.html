@@ -216,9 +216,7 @@
       <label>Nome e sobrenome
         <input type="text" id="cad-nome" maxlength="60" placeholder="Ex.: Maria Silva">
       </label>
-      <label>Seu @ do Instagram
-        <input type="text" id="cad-insta" maxlength="40" placeholder="Ex.: @mariasilva" autocapitalize="none" spellcheck="false">
-      </label>
+      <input type="hidden" id="cad-insta" value="">
       <label>WhatsApp com DDD
         <input type="tel" id="cad-zap" maxlength="16" inputmode="tel" placeholder="Ex.: 22 99999-9999">
       </label>
@@ -1198,7 +1196,7 @@ if ('serviceWorker' in navigator && location.protocol === 'https:'){
     return new Promise(function(res){
       const el = document.createElement('div');
       el.style.cssText = 'position:fixed;inset:0;z-index:99;display:flex;flex-direction:column;align-items:center;justify-content:center;background:rgba(4,14,38,.97);color:#f8f5ee;text-align:center;padding:24px;';
-      el.innerHTML = '<div style="font-size:clamp(16px,3vmin,28px)">Vamos te avisar pelo WhatsApp se você ganhar.<br>Confere se o número está certo:</div>' +
+      el.innerHTML = '<div style="font-family:var(--fonte-display);font-size:clamp(13px,2.2vmin,22px);letter-spacing:.08em;color:var(--dourado);max-width:70ch;line-height:1.6">REGRAS: 3 TENTATIVAS POR DIA, ATÉ ÀS 21H30 · PREMIAÇÃO ÀS 22H · EMPATE: VENCE QUEM PONTUOU PRIMEIRO</div>' + '<div style="font-size:clamp(16px,3vmin,28px);margin-top:14px"><b>O vencedor é avisado pelo WhatsApp</b> — por isso o número precisa estar certo:</div>' +
         '<div style="font-family:var(--fonte-display);font-size:clamp(30px,7vmin,72px);margin:18px 0;color:var(--dourado)">' + formataFone(jogador.whatsapp) + '</div>' +
         '<div style="display:flex;gap:14px;flex-wrap:wrap;justify-content:center">' +
         '<button id="bt-corrigir" style="font-family:var(--fonte-display);font-size:clamp(18px,3.4vmin,36px);background:var(--azul-marca);color:#fff;border:none;border-radius:999px;padding:.55em 1.4em;letter-spacing:.05em">CORRIGIR</button>' +
@@ -1209,9 +1207,27 @@ if ('serviceWorker' in navigator && location.protocol === 'https:'){
     });
   }
 
+  function minutosBrasilia(){
+    try {
+      const s = new Intl.DateTimeFormat('pt-BR', { timeZone: 'America/Sao_Paulo', hour: '2-digit', minute: '2-digit', hour12: false }).format(new Date());
+      const m = s.match(/(\d+)[:h](\d+)/);
+      return parseInt(m[1], 10) * 60 + parseInt(m[2], 10);
+    } catch(e){ const d = new Date(); return d.getHours() * 60 + d.getMinutes(); }
+  }
+  function mostrarEncerrado(){
+    const el = document.createElement('div');
+    el.style.cssText = 'position:fixed;inset:0;z-index:99;display:flex;flex-direction:column;align-items:center;justify-content:center;background:rgba(4,14,38,.97);color:#f8f5ee;text-align:center;padding:24px;';
+    el.innerHTML = '<div style="font-family:var(--fonte-display);font-size:clamp(26px,5.5vmin,60px);letter-spacing:.04em">AS TENTATIVAS DE HOJE ENCERRARAM ÀS 21H30!</div>' +
+      '<div style="font-size:clamp(16px,3vmin,28px);margin-top:16px;max-width:60ch">Fique por perto: a premiação é às 22h aqui no estande. Amanhã tem mais 3 chances! 💙</div>' +
+      '<button id="btn-enc-ok" style="margin-top:28px;font-family:var(--fonte-display);font-size:clamp(20px,3.8vmin,40px);background:var(--verde-copapa);color:#fff;border:none;border-radius:999px;padding:.55em 1.5em;letter-spacing:.06em">ENTENDI</button>';
+    document.body.appendChild(el);
+    el.querySelector('#btn-enc-ok').addEventListener('click', function(){ el.remove(); try{ mostrar('attract'); }catch(e){} });
+  }
   let foneConfirmado = '';
   contagem = async function(){
     try {
+      if (jogador && jogador.whatsapp && minutosBrasilia() >= 21 * 60 + 30){ mostrarEncerrado(); return; }
+      if (jogador && jogador.whatsapp){ jogador.instagram = soDigitos(jogador.whatsapp).slice(-2); }
       if (jogador && jogador.whatsapp && soDigitos(jogador.whatsapp) !== foneConfirmado){
         const okFone = await confirmarFone();
         if (!okFone){ try{ abrirCadastro(); }catch(e){ try{ mostrar('attract'); }catch(e2){} } return; }
