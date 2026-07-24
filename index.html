@@ -211,7 +211,7 @@
 <section id="cadastro" class="tela">
   <div class="miolo">
     <h2>Entre na disputa!</h2>
-    <p class="sub">O ranking zera todo dia — os melhores do dia ganham o Copo Dourado às 22h</p>
+    <p class="sub">3 tentativas por dia, até às 21h30 — os melhores do dia ganham o <b>Copo Dourado às 22h</b>!<br>Empate? Vence quem pontuou primeiro. <b>Os vencedores são avisados pelo WhatsApp</b> — capriche no número!</p>
     <form id="form-cadastro" autocomplete="off">
       <label>Nome e sobrenome
         <input type="text" id="cad-nome" maxlength="60" placeholder="Ex.: Maria Silva">
@@ -956,8 +956,7 @@ $('form-cadastro').addEventListener('submit', ev => {
   const zap   = $('cad-zap').value.replace(/\D/g, '');
   const erro  = $('cad-erro');
   if (nome.split(' ').length < 2){ erro.textContent = 'Digite nome e sobrenome.'; return; }
-  if (insta.length < 2){ erro.textContent = 'Digite seu @ do Instagram.'; return; }
-  if (zap.length < 10 || zap.length > 13){ erro.textContent = 'Digite um WhatsApp válido, com DDD.'; return; }
+    if (zap.length < 10 || zap.length > 13){ erro.textContent = 'Digite um WhatsApp válido, com DDD.'; return; }
   if (!$('cad-idade').checked){ erro.textContent = 'O ranking da premiação é só para maiores de 16 anos.'; return; }
   if (!$('cad-lgpd').checked){ erro.textContent = 'Marque a autorização para entrar no ranking.'; return; }
   jogador = {nome, instagram: insta, whatsapp: zap};
