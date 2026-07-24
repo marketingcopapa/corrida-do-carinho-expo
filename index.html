@@ -1127,5 +1127,103 @@ if ('serviceWorker' in navigator && location.protocol === 'https:'){
   navigator.serviceWorker.register('./sw.js').catch(() => {});
 }
 </script>
+
+<script>
+/* ===== Trava: 3 tentativas por dia, por telefone (Conquista do Carinho) ===== */
+(function(){
+  if (typeof contagem !== 'function' || typeof diaHoje !== 'function') return;
+  const contagemOriginal = contagem;
+  const LIMITE = 3;
+
+  function soDigitos(t){ return String(t || '').replace(/\D+/g, ''); }
+  function formataFone(t){
+    const d = soDigitos(t);
+    if (d.length >= 10){
+      return '(' + d.slice(0, 2) + ') ' + d.slice(2, d.length - 4) + '-' + d.slice(-4);
+    }
+    return t;
+  }
+  async function hashFone(t){
+    const dados = new TextEncoder().encode('copapa|' + soDigitos(t));
+    const h = await crypto.subtle.digest('SHA-256', dados);
+    return Array.from(new Uint8Array(h)).map(b => b.toString(16).padStart(2, '0')).join('').slice(0, 32);
+  }
+  function chaveLocal(dia, h){ return 'tentativas-' + dia + '-' + h; }
+  function usadasLocal(dia, h){ try{ return parseInt(localStorage.getItem(chaveLocal(dia, h)) || '0', 10); }catch(e){ return 0; } }
+  function marcaLocal(dia, h, n){ try{ localStorage.setItem(chaveLocal(dia, h), String(n)); }catch(e){} }
+
+  async function reservar(){
+    if (!jogador || !jogador.whatsapp) return { ok: true, n: 0 };
+    const dia = diaHoje();
+    const h = await hashFone(jogador.whatsapp);
+    let usadas = usadasLocal(dia, h);
+    if (usadas >= LIMITE) return { ok: false };
+    for (let n = usadas + 1; n <= LIMITE; n++){
+      const id = 't_' + dia + '_' + h + '_' + n;
+      try {
+        const r = await fetch(URL_DOCS() + '/tentativas?documentId=' + id + '&key=' + EVENTO.apiKey, {
+          method: 'POST', headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ fields: { dia: { stringValue: dia } } })
+        });
+        if (r.ok){ marcaLocal(dia, h, n); return { ok: true, n: n }; }
+        if (r.status === 409){ marcaLocal(dia, h, n); continue; }
+        throw new Error('rede');
+      } catch(e){
+        usadas = usadasLocal(dia, h);
+        if (usadas >= LIMITE) return { ok: false };
+        marcaLocal(dia, h, usadas + 1);
+        return { ok: true, n: usadas + 1, local: true };
+      }
+    }
+    return { ok: false };
+  }
+
+  function mostrarLimite(){
+    const el = document.createElement('div');
+    el.style.cssText = 'position:fixed;inset:0;z-index:99;display:flex;flex-direction:column;align-items:center;justify-content:center;background:rgba(4,14,38,.97);color:#f8f5ee;text-align:center;padding:24px;';
+    el.innerHTML = '<div style="font-family:var(--fonte-display);font-size:clamp(28px,6vmin,64px);letter-spacing:.04em">SUAS 3 TENTATIVAS DE HOJE ACABARAM!</div>' +
+      '<div style="font-size:clamp(16px,3vmin,28px);margin-top:16px;max-width:60ch">Boa sorte na premiação das 22h! Amanhã tem mais 3 chances. 💙</div>' +
+      '<button id="btn-limite-ok" style="margin-top:28px;font-family:var(--fonte-display);font-size:clamp(20px,3.8vmin,40px);background:var(--verde-copapa);color:#fff;border:none;border-radius:999px;padding:.55em 1.5em;letter-spacing:.06em">ENTENDI</button>';
+    document.body.appendChild(el);
+    el.querySelector('#btn-limite-ok').addEventListener('click', function(){ el.remove(); try{ mostrar('attract'); }catch(e){} });
+  }
+  function toastTentativa(n, local){
+    const el = document.createElement('div');
+    el.style.cssText = 'position:fixed;top:max(12px,2vmin);left:50%;transform:translateX(-50%);z-index:98;background:rgba(10,30,74,.95);color:#f8f5ee;border-radius:999px;padding:.5em 1.2em;font-family:var(--fonte-display);font-size:clamp(16px,3vmin,30px);letter-spacing:.05em;border-bottom:3px solid var(--verde-copapa)';
+    el.textContent = 'TENTATIVA ' + n + ' DE ' + LIMITE + (local ? ' (offline)' : '');
+    document.body.appendChild(el);
+    setTimeout(function(){ el.remove(); }, 3500);
+  }
+  function confirmarFone(){
+    return new Promise(function(res){
+      const el = document.createElement('div');
+      el.style.cssText = 'position:fixed;inset:0;z-index:99;display:flex;flex-direction:column;align-items:center;justify-content:center;background:rgba(4,14,38,.97);color:#f8f5ee;text-align:center;padding:24px;';
+      el.innerHTML = '<div style="font-size:clamp(16px,3vmin,28px)">Vamos te avisar pelo WhatsApp se você ganhar.<br>Confere se o número está certo:</div>' +
+        '<div style="font-family:var(--fonte-display);font-size:clamp(30px,7vmin,72px);margin:18px 0;color:var(--dourado)">' + formataFone(jogador.whatsapp) + '</div>' +
+        '<div style="display:flex;gap:14px;flex-wrap:wrap;justify-content:center">' +
+        '<button id="bt-corrigir" style="font-family:var(--fonte-display);font-size:clamp(18px,3.4vmin,36px);background:var(--azul-marca);color:#fff;border:none;border-radius:999px;padding:.55em 1.4em;letter-spacing:.05em">CORRIGIR</button>' +
+        '<button id="bt-certo" style="font-family:var(--fonte-display);font-size:clamp(18px,3.4vmin,36px);background:var(--verde-copapa);color:#fff;border:none;border-radius:999px;padding:.55em 1.4em;letter-spacing:.05em">ESTÁ CERTO, JOGAR!</button></div>';
+      document.body.appendChild(el);
+      el.querySelector('#bt-certo').addEventListener('click', function(){ el.remove(); res(true); });
+      el.querySelector('#bt-corrigir').addEventListener('click', function(){ el.remove(); res(false); });
+    });
+  }
+
+  let foneConfirmado = '';
+  contagem = async function(){
+    try {
+      if (jogador && jogador.whatsapp && soDigitos(jogador.whatsapp) !== foneConfirmado){
+        const okFone = await confirmarFone();
+        if (!okFone){ try{ abrirCadastro(); }catch(e){ try{ mostrar('attract'); }catch(e2){} } return; }
+        foneConfirmado = soDigitos(jogador.whatsapp);
+      }
+      const r = await reservar();
+      if (!r.ok){ mostrarLimite(); return; }
+      if (r.n) toastTentativa(r.n, r.local);
+    } catch(e){}
+    contagemOriginal();
+  };
+})();
+</script>
 </body>
 </html>
