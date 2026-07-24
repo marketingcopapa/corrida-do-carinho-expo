@@ -1,5 +1,8 @@
 # Corrida do Carinho — Modo Evento (Expo Pádua 2026)
 
+> **ATUALIZAÇÕES DE 24/07 (valem sobre o texto abaixo):** o jogo agora se chama **Conquista do Carinho**; o campo **Instagram foi removido** do cadastro (no ranking aparecem o nome + os 2 últimos dígitos do WhatsApp, ex.: "Maria S. •• 43"); há **trava de 3 tentativas por dia por telefone** (tela mostra "Tentativa X de 3"; entre tablets, exige publicar a regra da coleção `tentativas` — ver manual da equipe); **tentativas encerram às 21h30**, premiação às 22h; a conferência do vencedor é pelo **WhatsApp** (número confere com o final •• XX do placar), não mais pelo Instagram; nova página **equipe.html** com o Top 3 do dia e gerador de mensagem de WhatsApp.
+
+
 ## O que mudou no jogo
 
 **Cadastro antes de jogar.** No lugar das 3 iniciais depois da partida, o jogador agora se
