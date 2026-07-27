@@ -4,18 +4,21 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>Painel da Equipe — Conquista do Carinho</title>
+<link rel="icon" href="data:,">
 <style>
 body{margin:0;min-height:100vh;background:#0a1e4a;color:#f8f5ee;font-family:'Segoe UI',system-ui,sans-serif;display:flex;flex-direction:column;align-items:center;padding:24px}
-h1{font-size:clamp(22px,5vw,40px);margin:8px 0 2px;text-transform:uppercase;letter-spacing:.04em}
-.sub{color:#c9a24b;font-weight:700;margin-bottom:20px}
+h1{font-size:clamp(22px,5vw,40px);margin:8px 0 2px;text-transform:uppercase;letter-spacing:.04em;text-align:center}
+.sub{color:#c9a24b;font-weight:700;margin-bottom:20px;text-align:center}
 .card{background:rgba(0,10,35,.5);border-radius:16px;padding:20px;max-width:560px;width:100%;border-bottom:4px solid #0040a0;margin-bottom:18px;box-sizing:border-box}
 h2{font-size:15px;letter-spacing:.1em;color:#c9a24b;margin:0 0 10px;text-transform:uppercase}
-.venc{display:flex;align-items:center;gap:10px;background:rgba(255,255,255,.06);border-radius:12px;padding:10px 12px;margin-bottom:8px}
-.venc .pos{font-size:22px;font-weight:900;color:#c9a24b;min-width:34px}
-.venc .info{flex:1}
+.venc{display:flex;align-items:center;gap:10px;background:rgba(255,255,255,.06);border-radius:12px;padding:10px 12px;margin-bottom:8px;flex-wrap:wrap}
+.venc .pos{font-size:26px;font-weight:900;color:#c9a24b;min-width:38px}
+.venc .info{flex:1;min-width:150px}
 .venc .nome{font-weight:800;font-size:17px}
-.venc .det{font-size:13px;opacity:.8}
-.venc button{width:auto;margin:0;padding:8px 14px;font-size:13px}
+.venc .det{font-size:13px;opacity:.85}
+.venc .fone{font-size:15px;font-weight:800;color:#7fe3ab;letter-spacing:.03em}
+.venc button{width:auto;margin:0;padding:10px 16px;font-size:14px;white-space:nowrap}
+.venc button.sec{background:transparent;border:2px solid rgba(248,245,238,.35);color:#f8f5ee;font-weight:700}
 label{display:block;font-size:14px;letter-spacing:.08em;margin:14px 0 4px;color:#c9a24b}
 input,textarea{width:100%;box-sizing:border-box;border:none;border-radius:10px;padding:12px;font-size:17px;font-family:inherit}
 textarea{min-height:120px}
@@ -23,65 +26,199 @@ button{margin-top:14px;width:100%;background:#1d9e5f;color:#fff;border:none;bord
 button:active{transform:scale(.98)}
 .dica{font-size:13px;opacity:.75;margin-top:12px;line-height:1.5}
 #status{font-size:14px;opacity:.85}
+.linha{display:flex;gap:10px;align-items:center;flex-wrap:wrap;font-size:13px}
+.tag{border-radius:999px;padding:4px 10px;font-weight:800;font-size:12px;letter-spacing:.06em}
+.tag.on{background:rgba(29,158,95,.25);color:#7fe3ab}
+.tag.off{background:rgba(201,162,75,.2);color:#e8c887}
+.mini{background:transparent;border:2px solid rgba(248,245,238,.3);color:#f8f5ee;width:auto;margin:0;padding:6px 12px;font-size:12px;font-weight:700}
+#loginBox{display:none}
+.hide{display:none!important}
+.estado{border-radius:12px;padding:10px 14px;margin-bottom:12px;font-weight:800;font-size:14px;letter-spacing:.04em;line-height:1.4}
+.estado.parcial{background:rgba(201,162,75,.15);color:#e8c887;border-left:5px solid #c9a24b}
+.estado.final{background:rgba(29,158,95,.18);color:#7fe3ab;border-left:5px solid #1d9e5f}
+.estado small{display:block;font-weight:600;opacity:.85;letter-spacing:0;margin-top:3px}
 </style>
 </head>
 <body>
 <h1>Painel da Equipe</h1>
-<div class="sub">CONQUISTA DO CARINHO · EXPO PADUA</div>
+<div class="sub">CONQUISTA DO CARINHO · EXPO PÁDUA</div>
 
 <div class="card">
-<h2>Top 3 de hoje — <span id="dia"></span></h2>
-<div id="status">Carregando o ranking do dia...</div>
-<div id="lista"></div>
-<div class="dica">Os 3 primeiros do ranking oficial (tablets do estande), ja com desempate por quem pontuou primeiro. Toque em USAR para preencher a mensagem. Por seguranca (LGPD), o numero completo fica so no Firebase (colecao contatos) - confira pelo "final XX" ao copiar.</div>
+  <h2>Top 3 de hoje — <span id="dia"></span></h2>
+  <div class="linha" style="margin-bottom:10px">
+    <span id="tagLogin" class="tag off">MODO SIMPLES</span>
+    <button id="btnLoginToggle" class="mini">ENTRAR COM A CONTA DA EQUIPE</button>
+    <button id="btnSair" class="mini hide">SAIR</button>
+    <button id="btnRecarregar" class="mini">ATUALIZAR</button>
+  </div>
+
+  <div id="loginBox">
+    <label>E-MAIL DA EQUIPE</label>
+    <input id="email" type="email" autocomplete="username" placeholder="equipe@copapa.com.br">
+    <label>SENHA</label>
+    <input id="senha" type="password" autocomplete="current-password" placeholder="••••••••">
+    <button id="btnEntrar">ENTRAR</button>
+    <div class="dica">Entrando com a conta da equipe, o painel mostra o WhatsApp completo dos 3 primeiros e o envio vira um toque só. A senha não fica salva — só uma chave de sessão neste aparelho.</div>
+  </div>
+
+  <div id="estado" class="estado parcial">Carregando…</div>
+  <div id="status">Carregando o ranking do dia…</div>
+  <div id="lista"></div>
+  <div class="dica" id="dicaLista">Os 3 primeiros do ranking oficial (tablets do estande), já com desempate por quem pontuou primeiro. Toque em USAR para preencher a mensagem abaixo.</div>
 </div>
 
 <div class="card">
-<h2>Enviar WhatsApp de parabens</h2>
-<label>NOME DO VENCEDOR</label>
-<input id="nome" placeholder="Maria Silva">
-<label>WHATSAPP (copie do Firebase, so numeros)</label>
-<input id="fone" placeholder="22999990000" inputmode="numeric">
-<label>MENSAGEM</label>
-<textarea id="msg">Parabens, {NOME}! Voce foi um dos vencedores de hoje da Conquista do Carinho, na Expo Padua! Venha ate o estande da COPAPA retirar seu premio ate as 22h15. Equipe COPAPA - Linha Carinho.</textarea>
-<button id="btn">ABRIR WHATSAPP COM A MENSAGEM</button>
+  <h2>Enviar WhatsApp de parabéns</h2>
+  <label>NOME DO VENCEDOR</label>
+  <input id="nome" placeholder="Maria Silva">
+  <label>WHATSAPP (só números, com DDD)</label>
+  <input id="fone" placeholder="22999990000" inputmode="numeric">
+  <label>MENSAGEM</label>
+  <textarea id="msg">Parabéns, {NOME}! Você foi um dos vencedores de hoje da Conquista do Carinho, na Expo Pádua! Venha até o estande da COPAPA retirar seu prêmio até as 22h15. Equipe COPAPA - Linha Carinho.</textarea>
+  <button id="btn">ABRIR WHATSAPP COM A MENSAGEM</button>
 </div>
 
 <script>
+/* ---------- utilidades ---------- */
 function diaHoje(){
   try { return new Intl.DateTimeFormat('en-CA', { timeZone: 'America/Sao_Paulo' }).format(new Date()); }
   catch(e){ return new Date().toISOString().slice(0, 10); }
 }
 function esc(s){ var d = document.createElement('div'); d.textContent = String(s); return d.innerHTML; }
+var CORTE_H = 21, CORTE_M = 30;                 // fim das tentativas
+function minutosAgora(){
+  try{
+    var p = new Intl.DateTimeFormat('pt-BR', { timeZone:'America/Sao_Paulo', hour:'2-digit', minute:'2-digit', hour12:false }).format(new Date());
+    var m = p.match(/(\d{1,2})\D(\d{2})/);
+    if (m) return parseInt(m[1],10) * 60 + parseInt(m[2],10);
+  }catch(e){}
+  var d = new Date(); return d.getHours() * 60 + d.getMinutes();
+}
+function encerrado(){ var a = minutosAgora(); return a >= (CORTE_H*60 + CORTE_M); }
+function el(id){ return document.getElementById(id); }
+function fmtFone(d){
+  d = String(d || '').replace(/\D+/g, '').replace(/^55/, '');
+  if (d.length === 11) return '(' + d.slice(0,2) + ') ' + d.slice(2,7) + '-' + d.slice(7);
+  if (d.length === 10) return '(' + d.slice(0,2) + ') ' + d.slice(2,6) + '-' + d.slice(6);
+  return d;
+}
+function textoMsg(nome){
+  var primeiro = String(nome || '').trim().split(' ')[0] || 'jogador(a)';
+  return el('msg').value.replace('{NOME}', primeiro);
+}
+function abrirWhats(numero, nome){
+  var d = String(numero || '').replace(/\D+/g, '');
+  if (d.length < 10){ el('status').textContent = 'Número incompleto para ' + nome + '.'; return; }
+  if (d.length <= 11) d = '55' + d;
+  window.open('https://wa.me/' + d + '?text=' + encodeURIComponent(textoMsg(nome)), '_blank');
+}
 
+/* ---------- configuração (lida do ranking.html, fonte única) ---------- */
+var CFG = null;
+async function carregarConfig(){
+  if (CFG) return CFG;
+  var src = await (await fetch('ranking.html?v=' + Date.now())).text();
+  var mp = src.match(/projetoFirebase:\s*'([^']+)'/);
+  var mk = src.match(/apiKey:\s*'([^']+)'/);
+  if (!mp || !mk) throw new Error('configuração do Firebase não encontrada');
+  CFG = { projeto: mp[1], chave: mk[1] };
+  CFG.docs = 'https://firestore.googleapis.com/v1/projects/' + CFG.projeto + '/databases/(default)/documents';
+  return CFG;
+}
+
+/* ---------- sessão da equipe (opcional) ---------- */
+var CHAVE_SESSAO = 'copapa-equipe-sessao';
+var SESSAO = null;   // { idToken, refreshToken, exp }
+function lerSessao(){ try{ return JSON.parse(localStorage.getItem(CHAVE_SESSAO)); }catch(e){ return null; } }
+function salvarSessao(s){ try{ localStorage.setItem(CHAVE_SESSAO, JSON.stringify(s)); }catch(e){} }
+function limparSessao(){ try{ localStorage.removeItem(CHAVE_SESSAO); }catch(e){} SESSAO = null; }
+
+async function entrar(email, senha){
+  var c = await carregarConfig();
+  var r = await fetch('https://identitytoolkit.googleapis.com/v1/accounts:signInWithPassword?key=' + c.chave, {
+    method:'POST', headers:{'Content-Type':'application/json'},
+    body: JSON.stringify({ email: email, password: senha, returnSecureToken: true })
+  });
+  var j = await r.json();
+  if (!r.ok) throw new Error((j.error && j.error.message) || 'falha no login');
+  SESSAO = { idToken: j.idToken, refreshToken: j.refreshToken, exp: Date.now() + (parseInt(j.expiresIn,10) - 120) * 1000 };
+  salvarSessao(SESSAO);
+  return SESSAO;
+}
+async function tokenValido(){
+  if (!SESSAO) SESSAO = lerSessao();
+  if (!SESSAO || !SESSAO.refreshToken) return null;
+  if (SESSAO.idToken && SESSAO.exp && Date.now() < SESSAO.exp) return SESSAO.idToken;
+  var c = await carregarConfig();
+  var r = await fetch('https://securetoken.googleapis.com/v1/token?key=' + c.chave, {
+    method:'POST', headers:{'Content-Type':'application/x-www-form-urlencoded'},
+    body: 'grant_type=refresh_token&refresh_token=' + encodeURIComponent(SESSAO.refreshToken)
+  });
+  if (!r.ok){ limparSessao(); return null; }
+  var j = await r.json();
+  SESSAO = { idToken: j.id_token, refreshToken: j.refresh_token, exp: Date.now() + (parseInt(j.expires_in,10) - 120) * 1000 };
+  salvarSessao(SESSAO);
+  return SESSAO.idToken;
+}
+
+/* ---------- dados ---------- */
+async function buscarRanking(dia){
+  var c = await carregarConfig();
+  var base = c.docs + '/ranking_' + dia;
+  var docs = [], token = '', guarda = 0;
+  do {
+    var url = base + '?pageSize=300&key=' + c.chave + (token ? '&pageToken=' + token : '');
+    var js = await (await fetch(url)).json();
+    docs = docs.concat(js.documents || []);
+    token = js.nextPageToken || '';
+    guarda++;
+  } while (token && guarda < 10);
+  return docs.map(function(d){
+    var f = d.fields || {};
+    return {
+      nome: f.nome ? f.nome.stringValue : '???',
+      dig: f.instagram ? f.instagram.stringValue : '',
+      pontos: f.pontos ? parseInt(f.pontos.integerValue, 10) : 0,
+      origem: f.origem ? f.origem.stringValue : '',
+      criadoEm: f.criadoEm ? parseInt(f.criadoEm.integerValue, 10) : 0
+    };
+  }).filter(function(r){ return r.origem === 'tablet' && r.pontos > 0; });
+}
+
+async function buscarContatos(dia, idToken){
+  var c = await carregarConfig();
+  var body = { structuredQuery: {
+    from: [{ collectionId: 'contatos' }],
+    where: { fieldFilter: { field:{fieldPath:'dia'}, op:'EQUAL', value:{stringValue: dia} } },
+    limit: 1000
+  }};
+  var r = await fetch(c.docs + ':runQuery', {
+    method:'POST',
+    headers:{ 'Content-Type':'application/json', 'Authorization':'Bearer ' + idToken },
+    body: JSON.stringify(body)
+  });
+  if (!r.ok) throw new Error('sem permissão para ler contatos (HTTP ' + r.status + ')');
+  var js = await r.json();
+  var mapa = {};
+  (js || []).forEach(function(item){
+    if (!item.document) return;
+    var f = item.document.fields || {};
+    var nome = f.nome ? f.nome.stringValue : '';
+    var dig  = f.instagram ? f.instagram.stringValue : '';
+    var w    = f.whatsapp ? f.whatsapp.stringValue : '';
+    if (nome && w) mapa[nome + '|' + dig] = w;
+  });
+  return mapa;
+}
+
+/* ---------- montagem da tela ---------- */
+var TOP = [];
 async function carregarTop3(){
-  var st = document.getElementById('status');
+  var st = el('status');
   try {
-    var src = await (await fetch('ranking.html?v=' + Date.now())).text();
-    var mp = src.match(/projetoFirebase:\s*'([^']+)'/);
-    var mk = src.match(/apiKey:\s*'([^']+)'/);
-    if (!mp || !mk){ st.textContent = 'Configuracao do Firebase nao encontrada.'; return; }
     var dia = diaHoje();
-    document.getElementById('dia').textContent = dia.split('-').reverse().join('/');
-    var base = 'https://firestore.googleapis.com/v1/projects/' + mp[1] + '/databases/(default)/documents/ranking_' + dia;
-    var docs = [], token = '', guarda = 0;
-    do {
-      var url = base + '?pageSize=300&key=' + mk[1] + (token ? '&pageToken=' + token : '');
-      var js = await (await fetch(url)).json();
-      docs = docs.concat(js.documents || []);
-      token = js.nextPageToken || '';
-      guarda++;
-    } while (token && guarda < 10);
-    var lista = docs.map(function(d){
-      var f = d.fields || {};
-      return {
-        nome: f.nome ? f.nome.stringValue : '???',
-        dig: f.instagram ? f.instagram.stringValue : '',
-        pontos: f.pontos ? parseInt(f.pontos.integerValue, 10) : 0,
-        origem: f.origem ? f.origem.stringValue : '',
-        criadoEm: f.criadoEm ? parseInt(f.criadoEm.integerValue, 10) : 0
-      };
-    }).filter(function(r){ return r.origem === 'tablet' && r.pontos > 0; });
+    el('dia').textContent = dia.split('-').reverse().join('/');
+    var lista = await buscarRanking(dia);
     lista.sort(function(a, b){ return b.pontos - a.pontos || a.criadoEm - b.criadoEm; });
     var vistos = {}, top = [];
     for (var i = 0; i < lista.length && top.length < 3; i++){
@@ -89,39 +226,105 @@ async function carregarTop3(){
       if (vistos[ch]) continue;
       vistos[ch] = 1; top.push(lista[i]);
     }
-    var el = document.getElementById('lista');
-    if (!top.length){ st.textContent = 'Ninguem jogou nos tablets hoje ainda.'; return; }
-    st.textContent = '';
-    el.innerHTML = top.map(function(r, i){
-      var d2 = /^[0-9]{2}$/.test(r.dig) ? 'WhatsApp final •• ' + r.dig : (r.dig ? '@' + esc(r.dig) : '');
+    TOP = top;
+
+    var bn = el('estado');
+    if (encerrado()){
+      bn.className = 'estado final';
+      bn.innerHTML = 'RESULTADO FINAL DE HOJE — 1º, 2º e 3º LUGAR' +
+        '<small>Tentativas encerradas às 21h30. Esta é a lista oficial: chame os três e entregue o prêmio até as 22h15.</small>';
+    } else {
+      bn.className = 'estado parcial';
+      bn.innerHTML = 'PARCIAL — ainda dá para mudar até as 21h30' +
+        '<small>A lista oficial dos 3 primeiros aparece sozinha aqui às 21h30. Não precisa fazer nada, é só manter esta tela aberta.</small>';
+    }
+
+    var idToken = await tokenValido();
+    var logado = !!idToken;
+    var contatos = {};
+    if (logado){
+      try { contatos = await buscarContatos(dia, idToken); }
+      catch(e){ logado = false; st.textContent = 'Conectado, mas ' + e.message + '.'; }
+    }
+    marcarModo(logado);
+
+    if (!top.length){ el('lista').innerHTML = ''; st.textContent = 'Ninguém jogou nos tablets hoje ainda.'; return; }
+    if (st.textContent.indexOf('Conectado, mas') !== 0) st.textContent = '';
+
+    top.forEach(function(r){ r.whatsapp = contatos[r.nome + '|' + r.dig] || ''; });
+
+    el('lista').innerHTML = top.map(function(r, i){
+      var linhaFone = r.whatsapp
+        ? '<div class="fone">' + esc(fmtFone(r.whatsapp)) + '</div>'
+        : '<div class="det">' + (/^[0-9]{2}$/.test(r.dig) ? 'WhatsApp final •• ' + esc(r.dig) : (r.dig ? '@' + esc(r.dig) : 'sem contato')) + '</div>';
+      var botao = r.whatsapp
+        ? '<button data-w="' + i + '">WHATSAPP</button>'
+        : '<button class="sec" data-i="' + i + '">USAR</button>';
       return '<div class="venc"><div class="pos">' + (i + 1) + 'º</div>' +
         '<div class="info"><div class="nome">' + esc(r.nome) + '</div>' +
-        '<div class="det">' + r.pontos.toLocaleString('pt-BR') + ' pts · ' + d2 + '</div></div>' +
-        '<button data-i="' + i + '">USAR</button></div>';
+        '<div class="det">' + r.pontos.toLocaleString('pt-BR') + ' pts</div>' + linhaFone + '</div>' +
+        botao + '</div>';
     }).join('');
-    el.querySelectorAll('button').forEach(function(b){
+
+    el('lista').querySelectorAll('button[data-w]').forEach(function(b){
       b.addEventListener('click', function(){
-        var r = top[parseInt(b.getAttribute('data-i'), 10)];
-        document.getElementById('nome').value = r.nome;
-        document.getElementById('fone').value = '';
-        document.getElementById('fone').placeholder = 'cole o numero (final ' + r.dig + ')';
-        document.getElementById('fone').focus();
+        var r = TOP[parseInt(b.getAttribute('data-w'), 10)];
+        abrirWhats(r.whatsapp, r.nome);
+      });
+    });
+    el('lista').querySelectorAll('button[data-i]').forEach(function(b){
+      b.addEventListener('click', function(){
+        var r = TOP[parseInt(b.getAttribute('data-i'), 10)];
+        el('nome').value = r.nome;
+        el('fone').value = '';
+        el('fone').placeholder = 'cole o número (final ' + r.dig + ')';
+        el('fone').focus();
         window.scrollTo({ top: document.body.scrollHeight, behavior: 'smooth' });
       });
     });
   } catch(e){ st.textContent = 'Erro ao carregar o ranking: ' + e.message; }
 }
-carregarTop3();
-setInterval(carregarTop3, 60000);
 
-document.getElementById('btn').addEventListener('click', function(){
-  var d = (document.getElementById('fone').value || '').replace(/\D+/g, '');
-  if (d.length < 10){ alert('Numero incompleto: use DDD + numero'); return; }
-  if (d.length <= 11) d = '55' + d;
-  var nome = (document.getElementById('nome').value || '').trim().split(' ')[0] || 'jogador(a)';
-  var msg = document.getElementById('msg').value.replace('{NOME}', nome);
-  window.open('https://wa.me/' + d + '?text=' + encodeURIComponent(msg), '_blank');
+function marcarModo(logado){
+  var tag = el('tagLogin');
+  tag.textContent = logado ? 'EQUIPE CONECTADA' : 'MODO SIMPLES';
+  tag.className = 'tag ' + (logado ? 'on' : 'off');
+  el('btnSair').classList.toggle('hide', !logado);
+  el('btnLoginToggle').classList.toggle('hide', logado);
+  if (logado) el('loginBox').style.display = 'none';
+  el('dicaLista').innerHTML = logado
+    ? 'Toque em <b>WHATSAPP</b> e a conversa já abre com a mensagem pronta. Nada de Firebase.'
+    : 'Os 3 primeiros do ranking oficial (tablets do estande), com desempate por quem pontuou primeiro. Sem login, o número completo continua só no Firebase (coleção <b>contatos</b>) — confira pelo "final XX".';
+}
+
+/* ---------- eventos ---------- */
+el('btnLoginToggle').addEventListener('click', function(){
+  var b = el('loginBox');
+  b.style.display = (b.style.display === 'block') ? 'none' : 'block';
+  if (b.style.display === 'block') el('email').focus();
 });
+el('btnEntrar').addEventListener('click', async function(){
+  var st = el('status');
+  try{
+    st.textContent = 'Entrando…';
+    await entrar(el('email').value.trim(), el('senha').value);
+    el('senha').value = '';
+    el('loginBox').style.display = 'none';
+    st.textContent = 'Conectado. Carregando contatos…';
+    await carregarTop3();
+  }catch(e){ st.textContent = 'Não deu para entrar: ' + e.message; }
+});
+el('btnSair').addEventListener('click', function(){ limparSessao(); marcarModo(false); carregarTop3(); });
+el('btnRecarregar').addEventListener('click', carregarTop3);
+
+el('btn').addEventListener('click', function(){
+  var d = (el('fone').value || '').replace(/\D+/g, '');
+  if (d.length < 10){ el('status').textContent = 'Número incompleto: use DDD + número.'; return; }
+  abrirWhats(d, el('nome').value);
+});
+
+carregarTop3();
+setInterval(carregarTop3, 30000);
 </script>
 </body>
 </html>
