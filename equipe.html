@@ -185,6 +185,15 @@ async function buscarRanking(dia){
   }).filter(function(r){ return r.origem === 'tablet' && r.pontos > 0; });
 }
 
+function normNome(s){
+  return (s || '').toString().trim().toLowerCase().replace(/\s+/g, ' ')
+    .normalize('NFD').replace(/[\u0300-\u036f]/g, '');
+}
+function doisFinais(w){
+  var d = (w || '').replace(/\D+/g, '');
+  return d.length >= 2 ? d.slice(-2) : '';
+}
+
 async function buscarContatos(dia, idToken){
   var c = await carregarConfig();
   var body = { structuredQuery: {
@@ -199,15 +208,19 @@ async function buscarContatos(dia, idToken){
   });
   if (!r.ok) throw new Error('sem permissão para ler contatos (HTTP ' + r.status + ')');
   var js = await r.json();
-  var mapa = {};
+  var mapa = {}, porNome = {};
   (js || []).forEach(function(item){
     if (!item.document) return;
     var f = item.document.fields || {};
     var nome = f.nome ? f.nome.stringValue : '';
-    var dig  = f.instagram ? f.instagram.stringValue : '';
     var w    = f.whatsapp ? f.whatsapp.stringValue : '';
-    if (nome && w) mapa[nome + '|' + dig] = w;
+    if (!nome || !w) return;
+    var n = normNome(nome);
+    mapa[n + '|' + doisFinais(w)] = w;
+    if (porNome[n] === undefined) porNome[n] = w;
+    else if (porNome[n] !== w) porNome[n] = null;
   });
+  Object.keys(porNome).forEach(function(n){ if (porNome[n]) mapa['#' + n] = porNome[n]; });
   return mapa;
 }
 
@@ -251,7 +264,7 @@ async function carregarTop3(){
     if (!top.length){ el('lista').innerHTML = ''; st.textContent = 'Ninguém jogou nos tablets hoje ainda.'; return; }
     if (st.textContent.indexOf('Conectado, mas') !== 0) st.textContent = '';
 
-    top.forEach(function(r){ r.whatsapp = contatos[r.nome + '|' + r.dig] || ''; });
+    top.forEach(function(r){ var n = normNome(r.nome); r.whatsapp = contatos[n + '|' + r.dig] || contatos['#' + n] || ''; });
 
     el('lista').innerHTML = top.map(function(r, i){
       var linhaFone = r.whatsapp
