@@ -381,7 +381,7 @@ const MODO_NUVEM = !!(EVENTO.ativo && EVENTO.projetoFirebase && EVENTO.apiKey);
 /* Nos tablets do estande, abra o jogo com ?estande no fim do endereço:
    .../index.html?estande  → partidas marcadas como "tablet" (ranking oficial
    da premiação). Sem o parâmetro, a partida é marcada como "celular". */
-const ORIGEM = new URLSearchParams(location.search).has('estande') ? 'tablet' : 'celular';
+const ORIGEM = (function(){var p=new URLSearchParams(location.search);return (p.has('estande')||p.get('origem')==='tablet'||p.has('tablet'))?'tablet':'celular';})();
 let jogador = null;                 // {nome, instagram, whatsapp} da partida atual
 let ultimaJogadaTs = 0;             // horario da jogada atual — usado na regra de desempate
 
