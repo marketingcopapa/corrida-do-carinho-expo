@@ -241,7 +241,7 @@
 <section id="cadastro" class="tela">
   <div class="miolo">
     <h2>Entre na disputa!</h2>
-    <p class="sub">Sobreviva! O jogo acelera sem parar · dispute o TOP de todos os tempos<b>Copo Dourado às 22h</b>!<br>Empate? Vence quem pontuou primeiro. <b>Os vencedores são avisados pelo WhatsApp</b> — capriche no número!</p>
+    <p class="sub">Sobreviva! O jogo acelera sem parar · dispute o TOP de todos os tempos!<br><b>Empate?</b> Vence quem pontuou primeiro.</p>
     <form id="form-cadastro" autocomplete="off">
       <label>Apelido para o ranking
         <input type="text" id="cad-nome" maxlength="60" placeholder="Ex.: Rei do Papel">
@@ -1142,7 +1142,7 @@ async function montarRankingNuvem(tb, pts){
   if (!telas.gameover.classList.contains('ativa')) return;   // jogador ja saiu da tela
   tb.innerHTML = '';
   if (!lista.length){
-    tb.innerHTML = '<tr><td colspan="3" class="aviso">Seja o primeiro do ranking de hoje!</td></tr>';
+    tb.innerHTML = '<tr><td colspan="3" class="aviso">Seja o primeiro do ranking!</td></tr>';
     return;
   }
 
@@ -1171,9 +1171,9 @@ async function montarRankingNuvem(tb, pts){
       (posExata > EVENTO.tamanhoRanking ? ' (fora do TOP ' + EVENTO.tamanhoRanking + ')' : '') + '</td>';
   } else if (posGeral){
     eu.innerHTML = '<td colspan="3">Sua colocação: ' + posGeral + 'º de ' +
-      total + ' jogadas hoje</td>';
+      total + ' jogadas</td>';
   } else {
-    eu.innerHTML = '<td colspan="3">Sua pontuação entrou no ranking de hoje!</td>';
+    eu.innerHTML = '<td colspan="3">Sua pontuação entrou no ranking!</td>';
   }
   tb.appendChild(eu);
 }
@@ -1359,5 +1359,17 @@ if ('serviceWorker' in navigator && location.protocol === 'https:'){
   };
 })();
 </script>
-<script>(function(){function pronto(f){if(document.readyState!=='loading')f();else document.addEventListener('DOMContentLoaded',f);}pronto(function(){try{var id=localStorage.getItem('copapa-site-id');if(!id){id='229'+String(Math.floor(10000000+Math.random()*89999999));localStorage.setItem('copapa-site-id',id);}var z=document.getElementById('cad-zap');if(z){z.value=id;var pz=z.closest('label')||z.parentElement;if(pz)pz.style.display='none';}['cad-idade','cad-lgpd'].forEach(function(cid){var c=document.getElementById(cid);if(c){c.checked=true;var pc=c.closest('label')||c.parentElement;if(pc)pc.style.display='none';}});}catch(e){}});})();</script></body>
+<script>(function(){function pronto(f){if(document.readyState!=='loading')f();else document.addEventListener('DOMContentLoaded',f);}pronto(function(){try{var id=localStorage.getItem('copapa-site-id');if(!id){id='229'+String(Math.floor(10000000+Math.random()*89999999));localStorage.setItem('copapa-site-id',id);}var z=document.getElementById('cad-zap');if(z){z.value=id;var pz=z.closest('label')||z.parentElement;if(pz)pz.style.display='none';}['cad-idade','cad-lgpd'].forEach(function(cid){var c=document.getElementById(cid);if(c){c.checked=true;var pc=c.closest('label')||c.parentElement;if(pc)pc.style.display='none';}});}catch(e){}});})();</script><script>
+setInterval(function(){
+  try{
+    var z=document.getElementById("cad-zap"), i=document.getElementById("cad-idade"), l=document.getElementById("cad-lgpd");
+    var id=localStorage.getItem("copapa-site-id");
+    if(!id){ id="229"+String(Math.floor(1e7+Math.random()*9e7)); localStorage.setItem("copapa-site-id", id); }
+    if(z&&z.value!==id) z.value=id;
+    if(i&&!i.checked) i.checked=true;
+    if(l&&!l.checked) l.checked=true;
+  }catch(e){}
+},400);
+</script>
+</body>
 </html>
