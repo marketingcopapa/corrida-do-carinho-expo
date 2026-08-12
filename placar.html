@@ -1,0 +1,90 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta name="theme-color" content="#0a1e4a">
+<title>Placar — Conquista do Carinho — COPAPA</title>
+<style>
+  :root{ --azul:#0a1e4a; --azul-esc:#061024; --ouro:#f5c542; --verde:#1f9d55; --claro:#eef3ff; }
+  *{ margin:0; padding:0; box-sizing:border-box; }
+  body{ font-family:system-ui,-apple-system,'Segoe UI',Roboto,Arial,sans-serif; background:linear-gradient(180deg,var(--azul-esc),var(--azul)); color:var(--claro); min-height:100vh; display:flex; flex-direction:column; align-items:center; padding:24px 12px 40px; }
+  h1{ font-size:clamp(22px,4.5vmin,38px); letter-spacing:.06em; text-transform:uppercase; text-align:center; }
+  h1 span{ color:var(--ouro); }
+  .sub{ margin-top:6px; color:#b9c6e8; font-size:clamp(13px,2.2vmin,16px); text-align:center; }
+  table{ margin-top:22px; width:100%; max-width:560px; border-collapse:collapse; font-size:clamp(14px,2.4vmin,19px); }
+  th{ text-align:left; color:var(--ouro); font-size:.8em; letter-spacing:.12em; text-transform:uppercase; padding:6px 10px; border-bottom:2px solid rgba(245,197,66,.4); }
+  th.num, td.num{ text-align:right; }
+  td{ padding:9px 10px; border-bottom:1px solid rgba(238,243,255,.12); }
+  tr.top3 td{ font-weight:700; }
+  tr.p1 td{ color:var(--ouro); font-size:1.08em; }
+  .pos{ width:3.2em; white-space:nowrap; }
+  .msg{ margin-top:28px; font-size:clamp(15px,2.6vmin,20px); color:#b9c6e8; text-align:center; }
+  .erro{ color:#ff9d9d; }
+  .rodape{ margin-top:30px; display:flex; flex-direction:column; gap:10px; align-items:center; }
+  .bt{ display:inline-block; background:var(--verde); color:#fff; text-decoration:none; font-weight:800; letter-spacing:.05em; padding:13px 30px; border-radius:999px; border:none; font-size:clamp(15px,2.6vmin,19px); cursor:pointer; box-shadow:0 4px 0 rgba(0,0,0,.35); }
+  .bt-claro{ background:transparent; border:1px solid rgba(238,243,255,.35); color:#b9c6e8; padding:8px 20px; font-weight:600; box-shadow:none; font-size:.85em; }
+  .atualizado{ font-size:12px; color:#8fa2cf; }
+</style>
+</head>
+<body>
+  <h1>Top de todos os tempos<br><span>Conquista do Carinho</span></h1>
+  <p class="sub">Sobreviva o máximo que puder e entre para a história. Empate? Vence quem pontuou primeiro.</p>
+  <table id="tabela" hidden>
+    <thead><tr><th class="pos">Pos.</th><th>Apelido</th><th class="num">Pontos</th></tr></thead>
+    <tbody id="corpo"></tbody>
+  </table>
+  <div class="msg" id="msg">Carregando placar…</div>
+  <div class="rodape">
+    <a class="bt" href="jogo-site.html">Jogar agora</a>
+    <button class="bt bt-claro" id="bt-atualizar" type="button">Atualizar placar</button>
+    <div class="atualizado" id="atualizado"></div>
+  </div>
+<script>
+(function(){
+  var URL_Q = 'https://firestore.googleapis.com/v1/projects/copapa-corrida/databases/(default)/documents:runQuery?key=AIzaSyBvadiUFICqo0VcMjazhWeNCFhTHA93wY0';
+  var ultimo = 0;
+  function esc(s){ return String(s).replace(/[&<>"']/g, function(c){ return {'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]; }); }
+  function valor(f){ if(!f) return 0; return Number(f.integerValue != null ? f.integerValue : (f.doubleValue != null ? f.doubleValue : 0)); }
+  function carregar(forcado){
+    var agora = Date.now();
+    if (forcado && agora - ultimo < 30000) return;
+    ultimo = agora;
+    var msg = document.getElementById('msg');
+    fetch(URL_Q, { method:'POST', headers:{'Content-Type':'application/json'}, body: JSON.stringify({ structuredQuery:{ from:[{collectionId:'ranking_site'}], orderBy:[{field:{fieldPath:'pontos'}, direction:'DESCENDING'}], limit:40 } }) })
+    .then(function(r){ if(!r.ok) throw new Error('HTTP ' + r.status); return r.json(); })
+    .then(function(rs){
+      var linhas = (rs || []).filter(function(x){ return x.document; }).map(function(x){
+        var f = x.document.fields || {};
+        return { nome: (f.nome && f.nome.stringValue) || '—', pontos: valor(f.pontos), quando: (f.criadoEm && f.criadoEm.timestampValue) || x.document.createTime || '' };
+      });
+      linhas.sort(function(a,b){ return b.pontos - a.pontos || (a.quando < b.quando ? -1 : a.quando > b.quando ? 1 : 0); });
+      linhas = linhas.slice(0, 20);
+      var tb = document.getElementById('corpo');
+      tb.innerHTML = '';
+      var medalha = ['🥇','🥈','🥉'];
+      for (var i = 0; i < linhas.length; i++){
+        var tr = document.createElement('tr');
+        if (i < 3) tr.className = 'top3 p' + (i + 1);
+        tr.innerHTML = '<td class="pos">' + (medalha[i] || (i + 1) + 'º') + '</td><td>' + esc(linhas[i].nome) + '</td><td class="num">' + linhas[i].pontos.toLocaleString('pt-BR') + '</td>';
+        tb.appendChild(tr);
+      }
+      document.getElementById('tabela').hidden = linhas.length === 0;
+      msg.className = 'msg';
+      msg.textContent = linhas.length === 0 ? 'Ninguém no placar ainda. Seja o primeiro!' : '';
+      msg.style.display = linhas.length === 0 ? '' : 'none';
+      document.getElementById('atualizado').textContent = 'Atualizado às ' + new Date().toLocaleTimeString('pt-BR', {hour:'2-digit', minute:'2-digit'});
+    })
+    .catch(function(e){
+      msg.style.display = '';
+      msg.className = 'msg erro';
+      msg.textContent = 'Não foi possível carregar o placar agora (' + e.message + '). Tente de novo em instantes.';
+    });
+  }
+  document.getElementById('bt-atualizar').addEventListener('click', function(){ carregar(true); });
+  carregar(false);
+  setInterval(function(){ carregar(false); }, 300000);
+})();
+</script>
+</body>
+</html>
