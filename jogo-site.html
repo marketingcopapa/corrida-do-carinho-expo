@@ -513,7 +513,7 @@ const MEDALHAS = [
   {min:600,  emoji:'🥉', titulo:'CLIENTE CARINHO BRONZE'},
   {min:0,    emoji:'🧻', titulo:'APRENDIZ DO CARINHO'}
 ];
-const DURACAO = 60;            // segundos de partida
+const DURACAO = 75;            // segundos de partida
 const TEMPO_OCIOSO = 45000;    // ms até voltar à tela de descanso
 
 /* dificuldade calibrada para torneio (valor original nos comentários) */
@@ -637,7 +637,7 @@ function iniciarJogo(){
   const e = escala();
   jogo.rodando = true;
   jogo.itens = []; jogo.particulas = []; jogo.textos = [];
-  jogo.pontos = 0; jogo.combo = 0; jogo.tempo = 0; jogo.vidas = 5; jogo.tremor = 0;
+  jogo.pontos = 0; jogo.combo = 0; jogo.tempo = 0; jogo.vidas = 5; jogo.espCatch = 0; jogo.tremor = 0;
   jogo.carrinho.w = DIFICULDADE.larguraCarrinho * e; jogo.carrinho.h = 120 * e;
   jogo.carrinho.x = jogo.carrinho.alvoX = W / 2;
   jogo.proxSpawn = 0; jogo.ultimoT = performance.now();
@@ -749,7 +749,8 @@ function coletar(it){
     const mult = Math.min(DIFICULDADE.comboMax, 1 + Math.floor(jogo.combo / 5));
     const ganho = p.pontos * mult;
     jogo.pontos += ganho;
-    jogo.combo++;
+    jogo.combo++
+    if (p.especial){ jogo.espCatch = (jogo.espCatch || 0) + 1; if (jogo.espCatch >= 3 && jogo.vidas < 5){ jogo.espCatch = 0; jogo.vidas++; atualizarHUD(); flutuante(it.x, it.y - 40, '+1 ❤', 'e74c3c') } };
     if (p.especial){ somBonus(); } else { somPega(); }
     flutuante(it.x, it.y, '+' + ganho + '  ' + p.nome, p.especial ? '#1d9e5f' : '#0a1e4a');
     explodir(it.x, it.y, p.cor, p.especial ? 22 : 12, true);
@@ -1370,6 +1371,98 @@ setInterval(function(){
     if(l&&!l.checked) l.checked=true;
   }catch(e){}
 },400);
+</script>
+<script>
+/* filtro de apelido */
+(function(){
+  var RUINS = ['caralh','karalh','buceta','bucet','boceta','buc3t','fode','foda','fude','fudid','fodid','porra','pora','merda','viad','vagabund','arrombad','cuzao','cuzinh','babac','otari','bosta','xerec','xoxot','boquet','punhet','siriric','piroc','putari','putinh','putei','prostitut','estupr','pedofil','escrot','desgraca','krl','vsf','pqp','fdp','tnc','vtnc','carai','caraio','kct','pauno'];
+  var TOKENS = ['cu','cus','pau','puta','puto','putas','putos','corno','corna','anus','rola','pica','bixa','bicha','xota','xana','grelo'];
+  function normalizar(s){
+    s = String(s).toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g, '');
+    s = s.replace(/0/g,'o').replace(/1/g,'i').replace(/3/g,'e').replace(/4/g,'a').replace(/5/g,'s').replace(/7/g,'t').replace(/@/g,'a').replace(/\$/g,'s');
+    return s;
+  }
+  function temPalavrao(apelido){
+    var norm = normalizar(apelido);
+    var colapsado = norm.replace(/(.)\1+/g, '$1');
+    var i;
+    for (i = 0; i < RUINS.length; i++){
+      if (norm.indexOf(RUINS[i]) !== -1 || colapsado.indexOf(RUINS[i]) !== -1) return true;
+    }
+    var tokens = norm.split(/[^a-z]+/).concat(colapsado.split(/[^a-z]+/));
+    for (i = 0; i < tokens.length; i++){
+      if (tokens[i] && TOKENS.indexOf(tokens[i]) !== -1) return true;
+    }
+    return false;
+  }
+  function avisar(campo){
+    var velho = document.getElementById('aviso-apelido');
+    if (velho) velho.remove();
+    var div = document.createElement('div');
+    div.id = 'aviso-apelido';
+    div.textContent = 'Esse apelido não pode aparecer no ranking. Escolha outro! 😉';
+    div.style.cssText = 'color:#ffb3b3;font-weight:700;margin-top:8px;text-align:center';
+    campo.parentElement.appendChild(div);
+    campo.focus();
+    setTimeout(function(){ var d = document.getElementById('aviso-apelido'); if (d) d.remove(); }, 5000);
+  }
+  window.addEventListener('submit', function(e){
+    var form = e.target;
+    if (!form || form.id !== 'form-cadastro') return;
+    var campo = document.getElementById('cad-nome');
+    if (campo && temPalavrao(campo.value)){
+      e.preventDefault();
+      e.stopImmediatePropagation();
+      avisar(campo);
+    }
+  }, true);
+})();
+/* top 5 na tela inicial */
+(function(){
+  var chave = (document.documentElement.innerHTML.match(/AIza[\w-]{30,}/) || [null])[0];
+  if (!chave) return;
+  var urlQ = 'https://firestore.googleapis.com/v1/projects/copapa-corrida/databases/(default)/documents:runQuery?key=' + chave;
+  var painel = document.createElement('div');
+  painel.id = 'top5-site';
+  painel.style.cssText = 'display:none;position:fixed;left:50%;bottom:14px;transform:translateX(-50%);z-index:60;background:rgba(6,16,36,.82);border:1px solid rgba(245,197,66,.55);border-radius:14px;padding:10px 22px;color:#eef3ff;font-family:inherit;text-align:center;max-width:92vw;backdrop-filter:blur(3px)';
+  document.body.appendChild(painel);
+  var dados = [];
+  function desenhar(){
+    if (!dados.length){ painel.style.display = 'none'; return; }
+    var linhas = dados.map(function(l, i){
+      var pos = ['🥇','🥈','🥉'][i] || (i + 1) + 'º';
+      return '<div style="display:flex;justify-content:space-between;gap:18px;font-size:clamp(12px,1.9vmin,16px);line-height:1.7"><span>' + pos + ' ' + l.nome.replace(/[&<>]/g, '') + '</span><b style="color:#f5c542">' + l.pontos.toLocaleString('pt-BR') + '</b></div>';
+    }).join('');
+    painel.innerHTML = '<div style="color:#f5c542;font-weight:800;letter-spacing:.1em;font-size:clamp(11px,1.7vmin,14px);margin-bottom:4px">🏆 TOP 5 — QUEM VOCÊ VAI SUPERAR?</div>' + linhas;
+  }
+  function buscar(){
+    fetch(urlQ, { method:'POST', headers:{'Content-Type':'application/json'}, body: JSON.stringify({ structuredQuery:{ from:[{collectionId:'ranking_site'}], orderBy:[{field:{fieldPath:'pontos'}, direction:'DESCENDING'}], limit: 8 } }) })
+      .then(function(r){ return r.ok ? r.json() : []; })
+      .then(function(rs){
+        var linhas = (rs || []).filter(function(x){ return x.document; }).map(function(x){
+          var f = x.document.fields || {};
+          return { nome: (f.nome && f.nome.stringValue) || '—',
+                   pontos: Number((f.pontos && (f.pontos.integerValue || f.pontos.doubleValue)) || 0),
+                   quando: (f.criadoEm && (f.criadoEm.integerValue || f.criadoEm.timestampValue)) || '' };
+        });
+        linhas.sort(function(a,b){ return b.pontos - a.pontos || (a.quando < b.quando ? -1 : 1); });
+        dados = linhas.slice(0, 5);
+        desenhar();
+      }).catch(function(){});
+  }
+  function atracaoVisivel(){
+    var bts = document.querySelectorAll('button');
+    for (var i = 0; i < bts.length; i++){
+      if (bts[i].offsetParent !== null && /TOQUE PARA JOGAR/i.test(bts[i].innerText)) return true;
+    }
+    return false;
+  }
+  setInterval(function(){
+    painel.style.display = (atracaoVisivel() && dados.length) ? 'block' : 'none';
+  }, 800);
+  buscar();
+  setInterval(buscar, 300000);
+})();
 </script>
 </body>
 </html>
