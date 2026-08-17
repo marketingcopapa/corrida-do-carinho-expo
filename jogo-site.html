@@ -1531,7 +1531,7 @@ setInterval(function(){
   function noite(liga){ if (cv){ cv.style.filter = liga ? 'grayscale(1) invert(1) contrast(1.15)' : 'none'; cv.style.background = liga ? '#fff' : ''; } }
 
   var faixa = document.createElement('div');
-  faixa.style.cssText = 'display:none;position:fixed;left:50%;top:26%;transform:translate(-50%,-50%);z-index:55;pointer-events:none;font-family:var(--fonte-display,Impact,sans-serif);font-size:clamp(26px,6vmin,64px);letter-spacing:.06em;color:#f5c542;text-shadow:0 3px 0 rgba(0,0,0,.55),0 0 26px rgba(245,197,66,.45);text-align:center;white-space:nowrap;transition:opacity .4s;opacity:0';
+  faixa.style.cssText = 'display:none;position:fixed;left:50%;top:26%;transform:translate(-50%,-50%);z-index:997;pointer-events:none;font-family:var(--fonte-display,Impact,sans-serif);font-size:clamp(26px,6vmin,64px);letter-spacing:.06em;color:#f5c542;text-shadow:0 3px 0 rgba(0,0,0,.55),0 0 26px rgba(245,197,66,.45);text-align:center;white-space:nowrap;transition:opacity .4s;opacity:0';
   document.body.appendChild(faixa);
   var faixaTimer = null;
   function anunciar(txt){
@@ -1547,7 +1547,7 @@ setInterval(function(){
 
   /* ---- Carina em caixa de dialogo (estilo RPG) ---- */
   var carina = document.createElement('div');
-  carina.style.cssText = 'display:none;position:fixed;left:0;right:0;bottom:0;z-index:58;pointer-events:none;align-items:flex-end;padding:0 10px;opacity:0;transform:translateY(34px);transition:opacity .35s ease,transform .35s ease';
+  carina.style.cssText = 'display:none;position:fixed;left:0;right:0;bottom:0;z-index:998;pointer-events:none;align-items:flex-end;padding:0 10px;opacity:0;transform:translateY(34px);transition:opacity .35s ease,transform .35s ease';
   var carinaImg = document.createElement('img');
   carinaImg.alt = 'Carina';
   carinaImg.style.cssText = 'height:clamp(150px,36vmin,270px);width:auto;flex:0 0 auto;filter:drop-shadow(0 6px 14px rgba(0,0,0,.5));position:relative;z-index:1';
