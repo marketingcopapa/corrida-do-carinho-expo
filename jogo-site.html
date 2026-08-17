@@ -2,6 +2,26 @@
 <html lang="pt-BR">
 <head>
 <meta charset="UTF-8">
+<script>
+/* blindagem: se o navegador bloquear o armazenamento (aba anonima, iframe de outro dominio,
+   Safari com rastreamento bloqueado), usa uma memoria temporaria em vez de quebrar o jogo */
+(function(){
+  var ok = false;
+  try { window.localStorage.setItem('__teste__', '1'); window.localStorage.removeItem('__teste__'); ok = true; } catch(e){}
+  if (ok) return;
+  var mem = {};
+  var falso = {
+    getItem: function(k){ return Object.prototype.hasOwnProperty.call(mem, k) ? mem[k] : null; },
+    setItem: function(k, v){ mem[k] = String(v); },
+    removeItem: function(k){ delete mem[k]; },
+    clear: function(){ mem = {}; },
+    key: function(i){ return Object.keys(mem)[i] || null; }
+  };
+  Object.defineProperty(falso, 'length', { get: function(){ return Object.keys(mem).length; } });
+  try { Object.defineProperty(window, 'localStorage', { value: falso, configurable: true }); }
+  catch(e){ try { window.localStorage = falso; } catch(e2){} }
+})();
+</script>
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
 <meta name="theme-color" content="#0a1e4a">
 <title>Conquista do Carinho — COPAPA</title>
