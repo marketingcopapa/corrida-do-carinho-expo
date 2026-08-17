@@ -1529,7 +1529,7 @@ setInterval(function(){
   ];
   var cv = document.getElementById('cv');
   if (cv) cv.style.transition = 'filter .8s ease';
-  function noite(liga){ if (cv) cv.style.filter = liga ? 'grayscale(1) invert(1) contrast(1.15)' : 'none'; }
+  function noite(liga){ if (cv){ cv.style.filter = liga ? 'grayscale(1) invert(1) contrast(1.15)' : 'none'; cv.style.background = liga ? '#fff' : ''; } }
 
   var faixa = document.createElement('div');
   faixa.style.cssText = 'display:none;position:fixed;left:50%;top:26%;transform:translate(-50%,-50%);z-index:55;pointer-events:none;font-family:var(--fonte-display,Impact,sans-serif);font-size:clamp(26px,6vmin,64px);letter-spacing:.06em;color:#f5c542;text-shadow:0 3px 0 rgba(0,0,0,.55),0 0 26px rgba(245,197,66,.45);text-align:center;white-space:nowrap;transition:opacity .4s;opacity:0';
