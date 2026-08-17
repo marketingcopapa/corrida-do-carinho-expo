@@ -720,12 +720,24 @@ function loop(t){
   for (let i = jogo.itens.length - 1; i >= 0; i--){
     const it = jogo.itens[i];
     it.y += it.vy * dt
-      if (jogo.vento){ if (!it.vx) it.vx = (Math.random() < .5 ? -1 : 1) * (0.5 + Math.random()) * jogo.vento; it.x += it.vx * dt * escala(); if (it.x < it.r) it.x = it.r; if (it.x > W - it.r) it.x = W - it.r } else if (it.vx) it.vx = 0;
+      if (jogo.vento){ if (!it.vx) it.vx = (Math.random() < .5 ? -1 : 1) * (0.5 + Math.random()) * jogo.vento; it.x += it.vx * dt * escala(); if (it.x < it.r) it.x = it.r; if (it.x > W - it.r) it.x = W - it.r } else if (it.vx) it.vx = 0
+      if (it.vxr) it.x += it.vxr * dt
+      if (it.rebatido && it.y < -it.r * 3){ jogo.itens.splice(i, 1); continue };
     it.rot += it.vrot * dt;
     if (it.rot > .45 || it.rot < -.45) it.vrot = -it.vrot;   // balanço suave, embalagem sempre legível
     /* pegou? */
     if (it.y + it.r > topoCesta && it.y - it.r < topoCesta + c.h * .6 &&
         Math.abs(it.x - c.x) < c.w/2 + it.r * .35){
+      if (it.rebatido){ continue; }
+      if (jogo.estrela && jogo.tempo < jogo.estrela && it.p.ruim){
+        it.rebatido = true;
+        it.vy = -560 * escala();
+        it.vxr = (it.x >= jogo.carrinho.x ? 1 : -1) * (240 + Math.random() * 180) * escala();
+        somPega();
+        flutuante(it.x, it.y - 20, 'REBATEU! ⭐', '1d9e5f');
+        explodir(it.x, it.y, 'f5c542', 12, false);
+        continue;
+      }
       coletar(it);
       jogo.itens.splice(i, 1);
       continue;
@@ -757,6 +769,13 @@ function loop(t){
 }
 
 function coletar(it){
+  if (it.p.powerup){
+    jogo.estrela = jogo.tempo + 8
+    somBonus()
+    flutuante(it.x, it.y, 'MODO COPAPA! ⭐', 'f5c542')
+    explodir(it.x, it.y, 'f5c542', 26, true)
+    return
+  }
   const p = it.p, e = escala();
   if (p.ruim){
     jogo.pontos = Math.max(0, jogo.pontos + p.pontos);
@@ -769,6 +788,7 @@ function coletar(it){
     const ganho = p.pontos * mult;
     jogo.pontos += ganho;
     jogo.combo++
+    if (jogo.combo % 25 === 0 && jogo.vidas < 5){ jogo.vidas++; atualizarHUD(); flutuante(it.x, it.y - 60, 'CARINHÔMETRO CHEIO! +1 ❤', 'e74c3c') }
     if (p.especial){ jogo.espCatch = (jogo.espCatch || 0) + 1; if (jogo.espCatch >= 2 && jogo.vidas < 5){ jogo.espCatch = 0; jogo.vidas++; atualizarHUD(); flutuante(it.x, it.y - 40, '+1 ❤', 'e74c3c') } };
     if (p.especial){ somBonus(); } else { somPega(); }
     flutuante(it.x, it.y, '+' + ganho + '  ' + p.nome, p.especial ? '#1d9e5f' : '#0a1e4a');
@@ -939,6 +959,16 @@ function arredondado(x, y, w, h, r){
 }
 
 function desenharCarrinho(){
+  if (jogo.estrela && jogo.tempo < jogo.estrela){
+    const cE = jogo.carrinho, eE = escala()
+    const pisca = .5 + .5 * Math.sin(performance.now() / 90)
+    const gE = cx.createRadialGradient(cE.x, H - 110 * eE, 20 * eE, cE.x, H - 110 * eE, 190 * eE)
+    gE.addColorStop(0, 'rgba(245,197,66,' + (0.38 * pisca + 0.12).toFixed(3) + ')')
+    gE.addColorStop(1, 'rgba(245,197,66,0)')
+    cx.fillStyle = gE
+    cx.fillRect(cE.x - 200 * eE, H - 320 * eE, 400 * eE, 320 * eE)
+  }
+
   const c = jogo.carrinho, e = escala();
   cx.save();
   cx.translate(c.x, H - c.h/2 - 26 * e);
@@ -1600,6 +1630,7 @@ setInterval(function(){
   document.body.appendChild(carina);
   var IMGS = { 1: 'carina1.webp', 2: 'carina2.webp', 3: 'carina3.webp' };
   Object.keys(IMGS).forEach(function(k){ var i = new Image(); i.src = IMGS[k]; });
+  try { if (typeof IMG_CACHE !== 'undefined' && !IMG_CACHE['logocopapa']){ var liLogo = new Image(); liLogo.src = 'logo-copapa-azul.webp'; IMG_CACHE['logocopapa'] = liLogo; } } catch(e){}
   var carinaTimer = null;
   function mostrarCarina(nivel, html, segundos, clicavel, modal){
     clearTimeout(carinaTimer);
@@ -1628,6 +1659,46 @@ setInterval(function(){
   fecharX.addEventListener('click', esconderCarina);
   fundoCarina.addEventListener('click', esconderCarina);
   window.__carinaDemo = function(n, msg, modal){ mostrarCarina(n, msg || 'Mensagem de teste da Carina!', 8, false, !!modal); };
+
+  /* ---- Regras do jogo (botao na tela inicial + modal) ---- */
+  var fundoRegras = document.createElement('div');
+  fundoRegras.style.cssText = 'display:none;position:fixed;inset:0;z-index:996;background:rgba(2,8,24,.66);opacity:0;transition:opacity .3s';
+  var cardRegras = document.createElement('div');
+  cardRegras.style.cssText = 'display:none;position:fixed;left:50%;top:50%;transform:translate(-50%,-48%);z-index:998;width:min(92vw,520px);max-height:74vh;overflow-y:auto;background:rgba(6,16,36,.97);border:2px solid rgba(245,197,66,.85);border-radius:18px;padding:20px 22px 18px;color:#eef3ff;font-family:var(--fonte-corpo,inherit);opacity:0;transition:opacity .3s;box-shadow:0 10px 34px rgba(0,0,0,.55)';
+  cardRegras.innerHTML = '<button id="bt-fechar-regras" type="button" aria-label="Fechar" style="position:absolute;top:10px;right:10px;width:34px;height:34px;border-radius:50%;border:2px solid #f5c542;background:#0a1e4a;color:#f5c542;font-weight:900;font-size:15px;line-height:1;cursor:pointer">✕</button>'
+    + '<div style="font-family:var(--fonte-display,inherit);color:#f5c542;letter-spacing:.12em;font-size:clamp(17px,3vmin,24px);margin-bottom:12px;text-align:center">📜 REGRAS DO JOGO</div>'
+    + [
+      '🧺 Pegue os produtos COPAPA no carrinho e fuja do Papel Comum.',
+      '❤ Você tem <b>5 vidas</b>: perde 1 ao deixar cair um produto bom ou pegar o Papel Comum.',
+      '✨ Itens <b>dourados</b>: pegue 2 e recupere 1 coração.',
+      '💛 <b>Carinhômetro cheio</b> (25 acertos seguidos) também devolve 1 coração.',
+      '🕐 A cada 25 segundos sobe um <b>nível</b> — e o jogo acelera sem parar.',
+      '🌙 Em alguns níveis a <b>noite</b> chega por 18 segundos, no modo negativo.',
+      '💨 Eventos-surpresa: <b>Ventania</b>, <b>Papelada</b> e <b>Festival Premium</b>.',
+      '⭐ O <b>logo COPAPA</b> cai uma única vez por partida: pegue e fique invencível por 8s — o Papel Comum rebate pra longe!',
+      '🏆 O ranking guarda a sua <b>melhor pontuação</b> (pelo seu e-mail). Empate? Vence quem marcou primeiro.'
+    ].map(function(t){ return '<div style="padding:7px 0;border-bottom:1px solid rgba(238,243,255,.08);font-size:clamp(14px,2.3vmin,17px);line-height:1.5;text-align:left">' + t + '</div>'; }).join('');
+  document.body.appendChild(fundoRegras);
+  document.body.appendChild(cardRegras);
+  function abrirRegras(){
+    fundoRegras.style.display = 'block'; cardRegras.style.display = 'block';
+    setTimeout(function(){ fundoRegras.style.opacity = '1'; cardRegras.style.opacity = '1'; }, 20);
+  }
+  function fecharRegras(){
+    fundoRegras.style.opacity = '0'; cardRegras.style.opacity = '0';
+    setTimeout(function(){ fundoRegras.style.display = 'none'; cardRegras.style.display = 'none'; }, 320);
+  }
+  fundoRegras.addEventListener('click', fecharRegras);
+  cardRegras.addEventListener('click', function(e){ if (e.target && e.target.id === 'bt-fechar-regras') fecharRegras(); });
+  var btRegras = document.createElement('button');
+  btRegras.type = 'button';
+  btRegras.textContent = '📜 Regras do jogo';
+  btRegras.style.cssText = 'display:block;margin:10px auto 0;background:transparent;border:1px solid rgba(245,197,66,.5);color:#f5c542;font-family:var(--fonte-corpo,inherit);font-weight:700;font-size:clamp(12px,1.9vmin,15px);padding:7px 20px 5px;border-radius:999px;cursor:pointer';
+  btRegras.addEventListener('click', abrirRegras);
+  var tentaRegras = setInterval(function(){
+    var painelTop = document.getElementById('top10-site');
+    if (painelTop && painelTop.parentElement){ painelTop.insertAdjacentElement('afterend', btRegras); clearInterval(tentaRegras); }
+  }, 800);
 
   /* ---- e-mail + LGPD no cadastro ---- */
   function montarCampos(){
@@ -1753,9 +1824,21 @@ setInterval(function(){
       }
       if (!rodavaAntes){
         jaFeliz = false; jaRecorde = false; avisosVida = 0; vidasAntes = jogo.vidas; fimMostrado = false;
+        jogo.estrela = 0; jogo.logoCaiu = false; jogo.logoQuando = 0;
         esconderCarina();
       }
       rodavaAntes = true;
+
+      if (!jogo.logoCaiu){
+        if (!jogo.logoQuando) jogo.logoQuando = 18 + Math.random() * 22;
+        if (jogo.tempo >= jogo.logoQuando){
+          jogo.logoCaiu = true;
+          try {
+            var eL = escala();
+            jogo.itens.push({ p: { id: 'estrela', nome: 'COPAPA', cor: '0a1e4a', pontos: 0, powerup: true, img: 'logocopapa' }, r: 55 * eL, x: 70 * eL + Math.random() * (W - 140 * eL), y: -120 * eL, vy: (DIFICULDADE.velocidadeBase + 130) * eL, rot: 0, vrot: (Math.random() - .5) * .5 });
+          } catch(e){}
+        }
+      }
 
       var niv = 1 + Math.floor(jogo.tempo / 25);
       if (niv !== nivelAtual){
