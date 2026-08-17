@@ -1520,21 +1520,17 @@ setInterval(function(){
 })();
 </script>
 <script>
-/* niveis, fase noturna e eventos-surpresa */
+/* niveis (25s), modo negativo estilo Dino, eventos e a Carina */
 (function(){
-  var NIVEIS = [
-    { nome: 'PRIMEIRO TURNO', esc: 0 },
-    { nome: 'HORA DO RUSH', esc: 0 },
-    { nome: 'ENTARDECER', esc: .30 },
-    { nome: 'TURNO DA NOITE 🌙', esc: .55 },
-    { nome: 'MADRUGADA', esc: .72 },
-    { nome: 'MADRUGADA SEM FIM ∞', esc: .80 }
-  ];
   var EVENTOS = [
-    { id: 'vento', titulo: '💨 VENTANIA!', dur: 7 },
+    { id: 'vento', titulo: '💨 VENTANIA!', dur: 9 },
     { id: 'papelada', titulo: '🧻 PAPELADA!', dur: 6 },
     { id: 'festival', titulo: '✨ FESTIVAL PREMIUM!', dur: 7 }
   ];
+  var cv = document.getElementById('cv');
+  if (cv) cv.style.transition = 'filter .8s ease';
+  function noite(liga){ if (cv) cv.style.filter = liga ? 'invert(1)' : 'none'; }
+
   var faixa = document.createElement('div');
   faixa.style.cssText = 'display:none;position:fixed;left:50%;top:26%;transform:translate(-50%,-50%);z-index:55;pointer-events:none;font-family:var(--fonte-display,Impact,sans-serif);font-size:clamp(26px,6vmin,64px);letter-spacing:.06em;color:#f5c542;text-shadow:0 3px 0 rgba(0,0,0,.55),0 0 26px rgba(245,197,66,.45);text-align:center;white-space:nowrap;transition:opacity .4s;opacity:0';
   document.body.appendChild(faixa);
@@ -1547,47 +1543,109 @@ setInterval(function(){
     faixaTimer = setTimeout(function(){
       faixa.style.opacity = '0';
       setTimeout(function(){ faixa.style.display = 'none'; }, 450);
-    }, 2200);
+    }, 2000);
   }
+
+  /* ---- Carina ---- */
+  var carina = document.createElement('div');
+  carina.style.cssText = 'display:none;position:fixed;left:10px;bottom:10px;z-index:58;pointer-events:none;display:none;align-items:flex-end;gap:8px;transition:opacity .35s,transform .35s;opacity:0;transform:translateY(24px)';
+  var carinaImg = document.createElement('img');
+  carinaImg.style.cssText = 'height:clamp(110px,24vmin,190px);width:auto;filter:drop-shadow(0 4px 10px rgba(0,0,0,.45))';
+  var balao = document.createElement('div');
+  balao.style.cssText = 'background:#fff;color:#0a1e4a;font-weight:700;font-size:clamp(13px,2.2vmin,17px);padding:10px 14px;border-radius:14px 14px 14px 4px;max-width:min(52vw,300px);margin-bottom:24px;box-shadow:0 4px 14px rgba(0,0,0,.35);line-height:1.35';
+  carina.appendChild(carinaImg);
+  carina.appendChild(balao);
+  document.body.appendChild(carina);
+  var IMGS = { 1: 'carina1.webp', 2: 'carina2.webp', 3: 'carina3.webp' };
+  Object.keys(IMGS).forEach(function(k){ var i = new Image(); i.src = IMGS[k]; });
+  var carinaTimer = null;
+  function mostrarCarina(nivel, html, segundos, clicavel){
+    clearTimeout(carinaTimer);
+    carinaImg.src = IMGS[nivel];
+    balao.innerHTML = html;
+    carina.style.display = 'flex';
+    carina.style.pointerEvents = clicavel ? 'auto' : 'none';
+    requestAnimationFrame(function(){ carina.style.opacity = '1'; carina.style.transform = 'translateY(0)'; });
+    if (segundos) carinaTimer = setTimeout(esconderCarina, segundos * 1000);
+  }
+  function esconderCarina(){
+    clearTimeout(carinaTimer);
+    carina.style.opacity = '0';
+    carina.style.transform = 'translateY(24px)';
+    setTimeout(function(){ carina.style.display = 'none'; }, 380);
+  }
+
   var nivelAtual = 0, eventoMarcado = null, eventoFim = 0, rodavaAntes = false;
+  var jaFeliz = false, jaRecorde = false, avisosVida = 0, vidasAntes = 5, fimMostrado = false;
   setInterval(function(){
     try {
       if (typeof jogo === 'undefined') return;
       if (!jogo.rodando){
         if (rodavaAntes){
-          jogo.escuridao = 0; jogo.evento = null; jogo.vento = 0;
-          nivelAtual = 0; eventoMarcado = null;
+          jogo.evento = null; jogo.vento = 0;
+          nivelAtual = 0; eventoMarcado = null; noite(false);
           faixa.style.opacity = '0';
+          if (!fimMostrado && jogo.pontos > 0){
+            fimMostrado = true;
+            mostrarCarina(3, 'Mandou bem demais! 👏 Jogue de novo e siga a <a href="https://instagram.com/linhacarinho" target="_blank" rel="noopener" style="color:#0040a0;text-decoration:underline;pointer-events:auto">@linhacarinho</a> no Instagram! 💙', 0, true);
+            setTimeout(esconderCarina, 15000);
+          }
         }
         rodavaAntes = false;
         return;
       }
+      if (!rodavaAntes){
+        jaFeliz = false; jaRecorde = false; avisosVida = 0; vidasAntes = jogo.vidas; fimMostrado = false;
+        esconderCarina();
+      }
       rodavaAntes = true;
-      var niv = 1 + Math.floor(jogo.tempo / 30);
-      var conf = NIVEIS[Math.min(niv, NIVEIS.length) - 1];
+
+      var niv = 1 + Math.floor(jogo.tempo / 25);
       if (niv !== nivelAtual){
         nivelAtual = niv;
-        anunciar('NÍVEL ' + niv + ' — ' + conf.nome);
+        anunciar('NÍVEL ' + niv);
+        noite(niv >= 3 && niv % 2 === 1);
         if (niv >= 2){
           var ev = EVENTOS[Math.floor(Math.random() * EVENTOS.length)];
-          eventoMarcado = { ev: ev, quando: jogo.tempo + 6 + Math.random() * 16 };
+          eventoMarcado = { ev: ev, quando: jogo.tempo + 5 + Math.random() * 12 };
         }
       }
-      var alvo = conf.esc;
-      jogo.escuridao = (jogo.escuridao || 0) + (alvo - (jogo.escuridao || 0)) * 0.06;
       if (eventoMarcado && jogo.tempo >= eventoMarcado.quando){
         var ev = eventoMarcado.ev;
         eventoMarcado = null;
         jogo.evento = ev.id;
-        jogo.vento = ev.id === 'vento' ? (Math.random() < .5 ? -1 : 1) * (200 + Math.random() * 120) : 0;
+        jogo.vento = ev.id === 'vento' ? (Math.random() < .5 ? -1 : 1) * (380 + Math.random() * 180) : 0;
         eventoFim = jogo.tempo + ev.dur;
         anunciar(ev.titulo);
       }
-      if (jogo.evento && jogo.tempo >= eventoFim){
-        jogo.evento = null; jogo.vento = 0;
+      if (jogo.evento && jogo.tempo >= eventoFim){ jogo.evento = null; jogo.vento = 0; }
+
+      /* Carina na partida */
+      var melhor = null;
+      try { melhor = JSON.parse(localStorage.getItem('copapa-site-melhor') || 'null'); } catch(e){}
+      if (!jaRecorde && melhor && melhor.pontos > 500 && jogo.pontos > melhor.pontos){
+        jaRecorde = true;
+        mostrarCarina(1, 'Novo recorde seu! 🎉 Continua assim!', 4);
+      } else if (!jaFeliz && jogo.combo >= 15){
+        jaFeliz = true;
+        mostrarCarina(1, 'Você tá voando! ✨', 4);
       }
+      if (jogo.vidas === 1 && vidasAntes > 1 && avisosVida < 2){
+        avisosVida++;
+        mostrarCarina(2, 'Cuidado! Suas vidas estão acabando! 💔 Pegue os dourados!', 4);
+      }
+      vidasAntes = jogo.vidas;
     } catch(e){}
   }, 250);
+
+  /* esconder a Carina 3 quando voltar pra tela inicial */
+  setInterval(function(){
+    if (!fimMostrado) return;
+    var bts = document.querySelectorAll('button');
+    for (var i = 0; i < bts.length; i++){
+      if (bts[i].offsetParent !== null && /TOQUE PARA JOGAR/i.test(bts[i].innerText)){ esconderCarina(); fimMostrado = false; return; }
+    }
+  }, 1200);
 })();
 </script>
 </body>
