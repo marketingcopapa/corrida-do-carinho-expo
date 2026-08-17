@@ -31,7 +31,7 @@
     --fonte-corpo:'Segoe UI',system-ui,-apple-system,sans-serif;
   }
   *{margin:0;padding:0;box-sizing:border-box;-webkit-tap-highlight-color:transparent;}
-  html,body{height:100%;overflow:hidden;overscroll-behavior:none;touch-action:none;
+  html,body{height:100%;height:100dvh;overflow:hidden;overscroll-behavior:none;touch-action:none;
     font-family:var(--fonte-corpo);background:var(--marinho);color:var(--grafite);
     user-select:none;-webkit-user-select:none;}
   .tela{position:fixed;inset:0;display:none;flex-direction:column;align-items:center;justify-content:center;}
@@ -617,7 +617,7 @@ const cv = $('cv'), cx = cv.getContext('2d');
 let W = 0, H = 0, DPR = 1;
 function redimensionar(){
   DPR = Math.min(window.devicePixelRatio || 1, 2);
-  W = window.innerWidth; H = window.innerHeight;
+  W = cv.clientWidth || window.innerWidth; H = cv.clientHeight || window.innerHeight;
   cv.width = W * DPR; cv.height = H * DPR;
   cx.setTransform(DPR, 0, 0, DPR, 0, 0);
 }
@@ -1775,6 +1775,21 @@ setInterval(function(){
       vidasAntes = jogo.vidas;
     } catch(e){}
   }, 250);
+})();
+</script>
+<script>
+/* celular: re-ajusta o canvas quando a barra do navegador aparece/some (anti-achatamento) */
+(function(){
+  function ajustar(){ try { redimensionar(); } catch(e){} }
+  if (window.visualViewport) visualViewport.addEventListener('resize', ajustar);
+  window.addEventListener('orientationchange', function(){ setTimeout(ajustar, 250); });
+  setInterval(function(){
+    var c = document.getElementById('cv');
+    if (!c || !c.clientWidth || !c.clientHeight || !c.width || !c.height) return;
+    var propCss = c.clientWidth / c.clientHeight;
+    var propReal = c.width / c.height;
+    if (Math.abs(propCss - propReal) > 0.02) ajustar();
+  }, 800);
 })();
 </script>
 </body>
