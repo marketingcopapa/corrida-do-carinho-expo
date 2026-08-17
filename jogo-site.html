@@ -513,7 +513,7 @@ const MEDALHAS = [
   {min:600,  emoji:'🥉', titulo:'CLIENTE CARINHO BRONZE'},
   {min:0,    emoji:'🧻', titulo:'APRENDIZ DO CARINHO'}
 ];
-const DURACAO = 75;            // segundos de partida
+const DURACAO = 100;            // segundos de partida
 const TEMPO_OCIOSO = 45000;    // ms até voltar à tela de descanso
 
 /* dificuldade calibrada para torneio (valor original nos comentários) */
@@ -717,8 +717,7 @@ function loop(t){
   for (let i = jogo.itens.length - 1; i >= 0; i--){
     const it = jogo.itens[i];
     it.y += it.vy * dt
-      it.x += (jogo.vento || 0) * dt * escala()
-      if (jogo.vento){ if (it.x < it.r) it.x = it.r; if (it.x > W - it.r) it.x = W - it.r };
+      if (jogo.vento){ if (!it.vx) it.vx = (Math.random() < .5 ? -1 : 1) * (0.5 + Math.random()) * jogo.vento; it.x += it.vx * dt * escala(); if (it.x < it.r) it.x = it.r; if (it.x > W - it.r) it.x = W - it.r } else if (it.vx) it.vx = 0;
     it.rot += it.vrot * dt;
     if (it.rot > .45 || it.rot < -.45) it.vrot = -it.vrot;   // balanço suave, embalagem sempre legível
     /* pegou? */
@@ -767,7 +766,7 @@ function coletar(it){
     const ganho = p.pontos * mult;
     jogo.pontos += ganho;
     jogo.combo++
-    if (p.especial){ jogo.espCatch = (jogo.espCatch || 0) + 1; if (jogo.espCatch >= 3 && jogo.vidas < 5){ jogo.espCatch = 0; jogo.vidas++; atualizarHUD(); flutuante(it.x, it.y - 40, '+1 ❤', 'e74c3c') } };
+    if (p.especial){ jogo.espCatch = (jogo.espCatch || 0) + 1; if (jogo.espCatch >= 2 && jogo.vidas < 5){ jogo.espCatch = 0; jogo.vidas++; atualizarHUD(); flutuante(it.x, it.y - 40, '+1 ❤', 'e74c3c') } };
     if (p.especial){ somBonus(); } else { somPega(); }
     flutuante(it.x, it.y, '+' + ganho + '  ' + p.nome, p.especial ? '#1d9e5f' : '#0a1e4a');
     explodir(it.x, it.y, p.cor, p.especial ? 22 : 12, true);
@@ -1520,7 +1519,7 @@ setInterval(function(){
 })();
 </script>
 <script>
-/* niveis (25s), modo negativo estilo Dino, eventos e a Carina */
+/* niveis 25s, noite Dino 18s, eventos (festival fora da noite) e Carina em destaque */
 (function(){
   var EVENTOS = [
     { id: 'vento', titulo: '💨 VENTANIA!', dur: 9 },
@@ -1539,22 +1538,30 @@ setInterval(function(){
     clearTimeout(faixaTimer);
     faixa.textContent = txt;
     faixa.style.display = 'block';
-    requestAnimationFrame(function(){ faixa.style.opacity = '1'; });
+    setTimeout(function(){ faixa.style.opacity = '1'; }, 30);
     faixaTimer = setTimeout(function(){
       faixa.style.opacity = '0';
       setTimeout(function(){ faixa.style.display = 'none'; }, 450);
     }, 2000);
   }
 
-  /* ---- Carina ---- */
+  /* ---- Carina em caixa de dialogo (estilo RPG) ---- */
   var carina = document.createElement('div');
-  carina.style.cssText = 'display:none;position:fixed;left:10px;bottom:10px;z-index:58;pointer-events:none;display:none;align-items:flex-end;gap:8px;transition:opacity .35s,transform .35s;opacity:0;transform:translateY(24px)';
+  carina.style.cssText = 'display:none;position:fixed;left:0;right:0;bottom:0;z-index:58;pointer-events:none;align-items:flex-end;padding:0 10px;opacity:0;transform:translateY(34px);transition:opacity .35s ease,transform .35s ease';
   var carinaImg = document.createElement('img');
-  carinaImg.style.cssText = 'height:clamp(110px,24vmin,190px);width:auto;filter:drop-shadow(0 4px 10px rgba(0,0,0,.45))';
+  carinaImg.alt = 'Carina';
+  carinaImg.style.cssText = 'height:clamp(150px,36vmin,270px);width:auto;flex:0 0 auto;filter:drop-shadow(0 6px 14px rgba(0,0,0,.5));position:relative;z-index:1';
+  var caixa = document.createElement('div');
+  caixa.style.cssText = 'flex:1;min-width:0;background:rgba(6,16,36,.93);border:2px solid rgba(245,197,66,.85);border-radius:16px;padding:12px 16px 14px;margin:0 0 18px -20px;box-shadow:0 6px 22px rgba(0,0,0,.5)';
+  var etiqueta = document.createElement('div');
+  etiqueta.textContent = 'CARINA';
+  etiqueta.style.cssText = 'display:inline-block;background:#f5c542;color:#0a1e4a;font-weight:900;letter-spacing:.1em;padding:2px 14px;border-radius:8px;font-size:clamp(11px,1.8vmin,14px);margin-bottom:7px';
   var balao = document.createElement('div');
-  balao.style.cssText = 'background:#fff;color:#0a1e4a;font-weight:700;font-size:clamp(13px,2.2vmin,17px);padding:10px 14px;border-radius:14px 14px 14px 4px;max-width:min(52vw,300px);margin-bottom:24px;box-shadow:0 4px 14px rgba(0,0,0,.35);line-height:1.35';
+  balao.style.cssText = 'color:#eef3ff;font-weight:700;font-size:clamp(15px,2.6vmin,20px);line-height:1.4;overflow-wrap:break-word';
+  caixa.appendChild(etiqueta);
+  caixa.appendChild(balao);
   carina.appendChild(carinaImg);
-  carina.appendChild(balao);
+  carina.appendChild(caixa);
   document.body.appendChild(carina);
   var IMGS = { 1: 'carina1.webp', 2: 'carina2.webp', 3: 'carina3.webp' };
   Object.keys(IMGS).forEach(function(k){ var i = new Image(); i.src = IMGS[k]; });
@@ -1565,15 +1572,16 @@ setInterval(function(){
     balao.innerHTML = html;
     carina.style.display = 'flex';
     carina.style.pointerEvents = clicavel ? 'auto' : 'none';
-    requestAnimationFrame(function(){ carina.style.opacity = '1'; carina.style.transform = 'translateY(0)'; });
+    setTimeout(function(){ carina.style.opacity = '1'; carina.style.transform = 'translateY(0)'; }, 30);
     if (segundos) carinaTimer = setTimeout(esconderCarina, segundos * 1000);
   }
   function esconderCarina(){
     clearTimeout(carinaTimer);
     carina.style.opacity = '0';
-    carina.style.transform = 'translateY(24px)';
+    carina.style.transform = 'translateY(34px)';
     setTimeout(function(){ carina.style.display = 'none'; }, 380);
   }
+  window.__carinaDemo = function(n, msg){ mostrarCarina(n, msg || 'Mensagem de teste da Carina!', 8, false); };
 
   var nivelAtual = 0, eventoMarcado = null, eventoFim = 0, rodavaAntes = false, noiteFim = 0;
   var jaFeliz = false, jaRecorde = false, avisosVida = 0, vidasAntes = 5, fimMostrado = false;
@@ -1587,7 +1595,7 @@ setInterval(function(){
           faixa.style.opacity = '0';
           if (!fimMostrado && jogo.pontos > 0){
             fimMostrado = true;
-            mostrarCarina(3, 'Mandou bem demais! 👏 Jogue de novo e siga a <a href="https://instagram.com/linhacarinho" target="_blank" rel="noopener" style="color:#0040a0;text-decoration:underline;pointer-events:auto">@linhacarinho</a> no Instagram! 💙', 15, true);
+            mostrarCarina(3, 'Mandou bem demais! 👏 Jogue de novo e siga a <a href="https://instagram.com/linhacarinho" target="_blank" rel="noopener" style="color:#f5c542;text-decoration:underline;pointer-events:auto">@linhacarinho</a> no Instagram! 💙', 15, true);
           }
         }
         rodavaAntes = false;
@@ -1610,17 +1618,20 @@ setInterval(function(){
         }
       }
       if (eventoMarcado && jogo.tempo >= eventoMarcado.quando){
-        var ev = eventoMarcado.ev;
-        eventoMarcado = null;
-        jogo.evento = ev.id;
-        jogo.vento = ev.id === 'vento' ? (Math.random() < .5 ? -1 : 1) * (380 + Math.random() * 180) : 0;
-        eventoFim = jogo.tempo + ev.dur;
-        anunciar(ev.titulo);
+        if (eventoMarcado.ev.id === 'festival' && jogo.tempo < noiteFim){
+          eventoMarcado.quando = noiteFim + 1; /* festival espera clarear */
+        } else {
+          var ev = eventoMarcado.ev;
+          eventoMarcado = null;
+          jogo.evento = ev.id;
+          jogo.vento = ev.id === 'vento' ? (380 + Math.random() * 180) : 0;
+          eventoFim = jogo.tempo + ev.dur;
+          anunciar(ev.titulo);
+        }
       }
       if (jogo.evento && jogo.tempo >= eventoFim){ jogo.evento = null; jogo.vento = 0; }
       noite(jogo.tempo < noiteFim);
 
-      /* Carina na partida */
       var melhor = null;
       try { melhor = JSON.parse(localStorage.getItem('copapa-site-melhor') || 'null'); } catch(e){}
       if (!jaRecorde && melhor && melhor.pontos > 500 && jogo.pontos > melhor.pontos){
@@ -1637,8 +1648,6 @@ setInterval(function(){
       vidasAntes = jogo.vidas;
     } catch(e){}
   }, 250);
-
-  /* Carina 3 some sozinha apos 15s ou quando uma nova partida comeca */
 })();
 </script>
 </body>
