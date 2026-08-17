@@ -651,7 +651,7 @@ function pesoAtual(p){
   return p.ruim ? p.peso + DIFICULDADE.pesoComumExtra * progresso() : p.peso;
 }
 function sortearProduto(){
-  if (jogo.evento === 'festival'){ var esp = PRODUTOS.filter(function(q){ return q.especial }); return esp[Math.floor(Math.random() * esp.length)] }
+  if (jogo.evento === 'festival'){ var esp = PRODUTOS.filter(function(q){ return q.nome.indexOf('Premium') !== -1 }); return esp[Math.floor(Math.random() * esp.length)] }
   const total = PRODUTOS.reduce((s,p) => s + pesoAtual(p), 0);
   let r = Math.random() * total;
   for (const p of PRODUTOS){ r -= pesoAtual(p); if (r <= 0) return p; }
@@ -1529,7 +1529,7 @@ setInterval(function(){
   ];
   var cv = document.getElementById('cv');
   if (cv) cv.style.transition = 'filter .8s ease';
-  function noite(liga){ if (cv) cv.style.filter = liga ? 'invert(1)' : 'none'; }
+  function noite(liga){ if (cv) cv.style.filter = liga ? 'grayscale(1) invert(1) contrast(1.15)' : 'none'; }
 
   var faixa = document.createElement('div');
   faixa.style.cssText = 'display:none;position:fixed;left:50%;top:26%;transform:translate(-50%,-50%);z-index:55;pointer-events:none;font-family:var(--fonte-display,Impact,sans-serif);font-size:clamp(26px,6vmin,64px);letter-spacing:.06em;color:#f5c542;text-shadow:0 3px 0 rgba(0,0,0,.55),0 0 26px rgba(245,197,66,.45);text-align:center;white-space:nowrap;transition:opacity .4s;opacity:0';
@@ -1575,7 +1575,7 @@ setInterval(function(){
     setTimeout(function(){ carina.style.display = 'none'; }, 380);
   }
 
-  var nivelAtual = 0, eventoMarcado = null, eventoFim = 0, rodavaAntes = false;
+  var nivelAtual = 0, eventoMarcado = null, eventoFim = 0, rodavaAntes = false, noiteFim = 0;
   var jaFeliz = false, jaRecorde = false, avisosVida = 0, vidasAntes = 5, fimMostrado = false;
   setInterval(function(){
     try {
@@ -1583,7 +1583,7 @@ setInterval(function(){
       if (!jogo.rodando){
         if (rodavaAntes){
           jogo.evento = null; jogo.vento = 0;
-          nivelAtual = 0; eventoMarcado = null; noite(false);
+          nivelAtual = 0; eventoMarcado = null; noiteFim = 0; noite(false);
           faixa.style.opacity = '0';
           if (!fimMostrado && jogo.pontos > 0){
             fimMostrado = true;
@@ -1604,7 +1604,7 @@ setInterval(function(){
       if (niv !== nivelAtual){
         nivelAtual = niv;
         anunciar('NÍVEL ' + niv);
-        noite(niv >= 3 && niv % 2 === 1);
+        if (niv >= 3 && niv % 2 === 1) noiteFim = jogo.tempo + 18;
         if (niv >= 2){
           var ev = EVENTOS[Math.floor(Math.random() * EVENTOS.length)];
           eventoMarcado = { ev: ev, quando: jogo.tempo + 5 + Math.random() * 12 };
@@ -1619,6 +1619,7 @@ setInterval(function(){
         anunciar(ev.titulo);
       }
       if (jogo.evento && jogo.tempo >= eventoFim){ jogo.evento = null; jogo.vento = 0; }
+      noite(jogo.tempo < noiteFim);
 
       /* Carina na partida */
       var melhor = null;
@@ -1638,18 +1639,7 @@ setInterval(function(){
     } catch(e){}
   }, 250);
 
-  /* esconder a Carina 3 quando voltar pra tela inicial (checando se o botao esta realmente no topo) */
-  setInterval(function(){
-    if (!fimMostrado) return;
-    var bts = document.querySelectorAll('button');
-    for (var i = 0; i < bts.length; i++){
-      var b = bts[i];
-      if (b.offsetParent === null || !/TOQUE PARA JOGAR/i.test(b.innerText)) continue;
-      var r = b.getBoundingClientRect();
-      var topo = document.elementFromPoint(r.left + r.width / 2, r.top + r.height / 2);
-      if (topo && (topo === b || b.contains(topo))){ esconderCarina(); fimMostrado = false; return; }
-    }
-  }, 1200);
+  /* Carina 3 some sozinha apos 15s ou quando uma nova partida comeca */
 })();
 </script>
 </body>
