@@ -651,6 +651,7 @@ function pesoAtual(p){
   return p.ruim ? p.peso + DIFICULDADE.pesoComumExtra * progresso() : p.peso;
 }
 function sortearProduto(){
+  if (jogo.evento === 'festival'){ var esp = PRODUTOS.filter(function(q){ return q.especial }); return esp[Math.floor(Math.random() * esp.length)] }
   const total = PRODUTOS.reduce((s,p) => s + pesoAtual(p), 0);
   let r = Math.random() * total;
   for (const p of PRODUTOS){ r -= pesoAtual(p); if (r <= 0) return p; }
@@ -658,6 +659,19 @@ function sortearProduto(){
 }
 
 function perderVida(){ if (!jogo.rodando) return; jogo.vidas--; atualizarHUD(); if (jogo.vidas <= 0){ jogo.vidas = 0; fimDeJogo(); } }
+function desenharNoite(){
+  if (!jogo.rodando) return
+  var esc = jogo.escuridao || 0
+  if (esc <= 0.01) return
+  var e = escala()
+  var cxx = jogo.carrinho.x, cyy = H - 110 * e
+  var raio = 380 * e
+  var g = cx.createRadialGradient(cxx, cyy, raio * .28, cxx, cyy, raio)
+  g.addColorStop(0, 'rgba(2,6,20,0)')
+  g.addColorStop(1, 'rgba(2,6,20,' + esc.toFixed(3) + ')')
+  cx.fillStyle = g
+  cx.fillRect(0, 0, W, H)
+}
 function progresso(){ return jogo.tempo / DURACAO; }   // 0 → 1
 
 function spawn(){
@@ -688,7 +702,7 @@ function loop(t){
   if (jogo.proxSpawn <= 0){
     spawn();
     jogo.proxSpawn = Math.max(DIFICULDADE.spawnMin,
-      DIFICULDADE.spawnBase - DIFICULDADE.spawnRampa * progresso()) * (0.65 + Math.random() * .5);
+      DIFICULDADE.spawnBase - DIFICULDADE.spawnRampa * progresso()) * (0.65 + Math.random() * .5) * (jogo.evento === 'papelada' ? 0.33 : 1);
   }
 
   /* carrinho persegue o alvo */
@@ -702,7 +716,9 @@ function loop(t){
   const topoCesta = H - c.h - 40 * escala();
   for (let i = jogo.itens.length - 1; i >= 0; i--){
     const it = jogo.itens[i];
-    it.y += it.vy * dt;
+    it.y += it.vy * dt
+      it.x += (jogo.vento || 0) * dt * escala()
+      if (jogo.vento){ if (it.x < it.r) it.x = it.r; if (it.x > W - it.r) it.x = W - it.r };
     it.rot += it.vrot * dt;
     if (it.rot > .45 || it.rot < -.45) it.vrot = -it.vrot;   // balanço suave, embalagem sempre legível
     /* pegou? */
@@ -733,7 +749,8 @@ function loop(t){
   if (jogo.tremor > 0) jogo.tremor -= dt * 30;
 
   desenhar();
-  atualizarTempoHUD();
+  desenharNoite()
+    atualizarTempoHUD();
   requestAnimationFrame(loop);
 }
 
@@ -1500,6 +1517,77 @@ setInterval(function(){
   }, 900);
   buscar();
   setInterval(buscar, 300000);
+})();
+</script>
+<script>
+/* niveis, fase noturna e eventos-surpresa */
+(function(){
+  var NIVEIS = [
+    { nome: 'PRIMEIRO TURNO', esc: 0 },
+    { nome: 'HORA DO RUSH', esc: 0 },
+    { nome: 'ENTARDECER', esc: .30 },
+    { nome: 'TURNO DA NOITE 🌙', esc: .55 },
+    { nome: 'MADRUGADA', esc: .72 },
+    { nome: 'MADRUGADA SEM FIM ∞', esc: .80 }
+  ];
+  var EVENTOS = [
+    { id: 'vento', titulo: '💨 VENTANIA!', dur: 7 },
+    { id: 'papelada', titulo: '🧻 PAPELADA!', dur: 6 },
+    { id: 'festival', titulo: '✨ FESTIVAL PREMIUM!', dur: 7 }
+  ];
+  var faixa = document.createElement('div');
+  faixa.style.cssText = 'display:none;position:fixed;left:50%;top:26%;transform:translate(-50%,-50%);z-index:55;pointer-events:none;font-family:var(--fonte-display,Impact,sans-serif);font-size:clamp(26px,6vmin,64px);letter-spacing:.06em;color:#f5c542;text-shadow:0 3px 0 rgba(0,0,0,.55),0 0 26px rgba(245,197,66,.45);text-align:center;white-space:nowrap;transition:opacity .4s;opacity:0';
+  document.body.appendChild(faixa);
+  var faixaTimer = null;
+  function anunciar(txt){
+    clearTimeout(faixaTimer);
+    faixa.textContent = txt;
+    faixa.style.display = 'block';
+    requestAnimationFrame(function(){ faixa.style.opacity = '1'; });
+    faixaTimer = setTimeout(function(){
+      faixa.style.opacity = '0';
+      setTimeout(function(){ faixa.style.display = 'none'; }, 450);
+    }, 2200);
+  }
+  var nivelAtual = 0, eventoMarcado = null, eventoFim = 0, rodavaAntes = false;
+  setInterval(function(){
+    try {
+      if (typeof jogo === 'undefined') return;
+      if (!jogo.rodando){
+        if (rodavaAntes){
+          jogo.escuridao = 0; jogo.evento = null; jogo.vento = 0;
+          nivelAtual = 0; eventoMarcado = null;
+          faixa.style.opacity = '0';
+        }
+        rodavaAntes = false;
+        return;
+      }
+      rodavaAntes = true;
+      var niv = 1 + Math.floor(jogo.tempo / 30);
+      var conf = NIVEIS[Math.min(niv, NIVEIS.length) - 1];
+      if (niv !== nivelAtual){
+        nivelAtual = niv;
+        anunciar('NÍVEL ' + niv + ' — ' + conf.nome);
+        if (niv >= 2){
+          var ev = EVENTOS[Math.floor(Math.random() * EVENTOS.length)];
+          eventoMarcado = { ev: ev, quando: jogo.tempo + 6 + Math.random() * 16 };
+        }
+      }
+      var alvo = conf.esc;
+      jogo.escuridao = (jogo.escuridao || 0) + (alvo - (jogo.escuridao || 0)) * 0.06;
+      if (eventoMarcado && jogo.tempo >= eventoMarcado.quando){
+        var ev = eventoMarcado.ev;
+        eventoMarcado = null;
+        jogo.evento = ev.id;
+        jogo.vento = ev.id === 'vento' ? (Math.random() < .5 ? -1 : 1) * (200 + Math.random() * 120) : 0;
+        eventoFim = jogo.tempo + ev.dur;
+        anunciar(ev.titulo);
+      }
+      if (jogo.evento && jogo.tempo >= eventoFim){
+        jogo.evento = null; jogo.vento = 0;
+      }
+    } catch(e){}
+  }, 250);
 })();
 </script>
 </body>
