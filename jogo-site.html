@@ -890,15 +890,38 @@ function desenharItem(it){
   cx.font = Math.round(r*.62) + 'px ' + FONTE;
   cx.textAlign = 'center'; cx.textBaseline = 'middle';
   cx.fillText(p.icone, 0, h*.09);
-  const oy = -h*.28;
-  cx.fillStyle = '#1c2436';
-  cx.beginPath(); cx.arc(-r*.3, oy, r*.075, 0, 7); cx.fill();
-  cx.beginPath(); cx.arc( r*.3, oy, r*.075, 0, 7); cx.fill();
-  cx.strokeStyle = '#1c2436'; cx.lineWidth = r*.075; cx.lineCap = 'round';
-  cx.beginPath();
-  cx.arc(0, oy + r*.38, r*.18, Math.PI*1.15, Math.PI*1.85);   // carinha triste
-  cx.stroke();
-
+  const oy = -h*.28
+  /* vilão rabugento animado: pupilas seguem o carrinho, pisca e franze a testa */
+  const tAgora = performance.now() / 1000
+  const fase = (it.x * .013 + it.y * .007) % 6.28
+  const piscando = ((tAgora + fase) % 2.8) < 0.13
+  const alvoX = (typeof jogo !== 'undefined' && jogo.carrinho) ? jogo.carrinho.x : it.x
+  const angOlhar = Math.atan2(H - it.y, alvoX - it.x) - it.rot
+  const olhoR = r * .16
+  const px = Math.cos(angOlhar) * olhoR * .38
+  const py = Math.sin(angOlhar) * olhoR * .38
+  const balanco = Math.sin(tAgora * 3 + fase) * r * .02
+  cx.fillStyle = '#fff'
+  cx.beginPath(); cx.ellipse(-r*.3, oy, olhoR, olhoR * 1.05, 0, 0, 7); cx.fill()
+  cx.beginPath(); cx.ellipse( r*.3, oy, olhoR, olhoR * 1.05, 0, 0, 7); cx.fill()
+  if (piscando){
+    cx.strokeStyle = '#1c2436'; cx.lineWidth = r*.06; cx.lineCap = 'round'
+    cx.beginPath(); cx.moveTo(-r*.3 - olhoR*.7, oy); cx.lineTo(-r*.3 + olhoR*.7, oy); cx.stroke()
+    cx.beginPath(); cx.moveTo( r*.3 - olhoR*.7, oy); cx.lineTo( r*.3 + olhoR*.7, oy); cx.stroke()
+  } else {
+    cx.fillStyle = '#1c2436'
+    cx.beginPath(); cx.arc(-r*.3 + px, oy + py, r*.075, 0, 7); cx.fill()
+    cx.beginPath(); cx.arc( r*.3 + px, oy + py, r*.075, 0, 7); cx.fill()
+  }
+  cx.strokeStyle = '#1c2436'
+  cx.lineWidth = r*.07
+  cx.lineCap = 'round'
+  cx.beginPath(); cx.moveTo(-r*.46, oy - olhoR*1.5 + balanco); cx.lineTo(-r*.14, oy - olhoR*.7 + balanco); cx.stroke()
+  cx.beginPath(); cx.moveTo( r*.46, oy - olhoR*1.5 + balanco); cx.lineTo( r*.14, oy - olhoR*.7 + balanco); cx.stroke()
+  cx.lineWidth = r*.075
+  cx.beginPath()
+  cx.arc(0, oy + r*.42, r*.16, Math.PI*1.15, Math.PI*1.85)
+  cx.stroke()
   cx.restore();
 }
 
