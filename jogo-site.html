@@ -890,9 +890,9 @@ function desenharItem(it){
       cx.fillStyle = g;
       cx.beginPath(); cx.arc(0, 0, wi * .8, 0, 7); cx.fill();
     }
-    cx.fillStyle = 'rgba(10,30,74,.14)';
+    if (!p.powerup){ cx.fillStyle = 'rgba(10,30,74,.14)';
     cx.beginPath(); cx.ellipse(4, hi * .42, wi * .4, hi * .12, 0, 0, 7); cx.fill();
-    cx.drawImage(img, -wi/2, -hi/2, wi, hi);
+    } cx.drawImage(img, -wi/2, -hi/2, wi, hi);
     cx.restore();
     return;
   }
@@ -1666,18 +1666,23 @@ setInterval(function(){
   var cardRegras = document.createElement('div');
   cardRegras.style.cssText = 'display:none;position:fixed;left:50%;top:50%;transform:translate(-50%,-48%);z-index:998;width:min(92vw,520px);max-height:74vh;overflow-y:auto;background:rgba(6,16,36,.97);border:2px solid rgba(245,197,66,.85);border-radius:18px;padding:20px 22px 18px;color:#eef3ff;font-family:var(--fonte-corpo,inherit);opacity:0;transition:opacity .3s;box-shadow:0 10px 34px rgba(0,0,0,.55)';
   cardRegras.innerHTML = '<button id="bt-fechar-regras" type="button" aria-label="Fechar" style="position:absolute;top:10px;right:10px;width:34px;height:34px;border-radius:50%;border:2px solid #f5c542;background:#0a1e4a;color:#f5c542;font-weight:900;font-size:15px;line-height:1;cursor:pointer">✕</button>'
-    + '<div style="font-family:var(--fonte-display,inherit);color:#f5c542;letter-spacing:.12em;font-size:clamp(17px,3vmin,24px);margin-bottom:12px;text-align:center">📜 REGRAS DO JOGO</div>'
+    + '<div style="font-family:var(--fonte-display,inherit);color:#f5c542;letter-spacing:.12em;font-size:clamp(17px,3vmin,24px);margin-bottom:4px;text-align:center">📜 REGRAS DO JOGO</div>'
+    + '<div style="text-align:center;color:#b9c6e8;font-size:clamp(12px,1.9vmin,14px);margin-bottom:12px">Tudo o que você precisa pra dominar a Conquista do Carinho</div>'
     + [
-      '🧺 Pegue os produtos COPAPA no carrinho e fuja do Papel Comum.',
-      '❤ Você tem <b>5 vidas</b>: perde 1 ao deixar cair um produto bom ou pegar o Papel Comum.',
-      '✨ Itens <b>dourados</b>: pegue 2 e recupere 1 coração.',
-      '💛 <b>Carinhômetro cheio</b> (25 acertos seguidos) também devolve 1 coração.',
-      '🕐 A cada 25 segundos sobe um <b>nível</b> — e o jogo acelera sem parar.',
-      '🌙 Em alguns níveis a <b>noite</b> chega por 18 segundos, no modo negativo.',
-      '💨 Eventos-surpresa: <b>Ventania</b>, <b>Papelada</b> e <b>Festival Premium</b>.',
-      '⭐ O <b>logo COPAPA</b> cai uma única vez por partida: pegue e fique invencível por 8s — o Papel Comum rebate pra longe!',
-      '🏆 O ranking guarda a sua <b>melhor pontuação</b> (pelo seu e-mail). Empate? Vence quem marcou primeiro.'
-    ].map(function(t){ return '<div style="padding:7px 0;border-bottom:1px solid rgba(238,243,255,.08);font-size:clamp(14px,2.3vmin,17px);line-height:1.5;text-align:left">' + t + '</div>'; }).join('');
+      { t: '🎯 OBJETIVO', d: 'Sobreviva o máximo que puder! Encha o carrinho de produtos COPAPA, acumule pontos e entre para o <b>TOP 10 de todos os tempos</b>. O jogo não tem fim — ele acelera até te vencer.' },
+      { t: '🛒 COMO JOGAR', d: 'No <b>celular</b>, arraste o dedo pela tela. No <b>computador</b>, use o mouse ou as setas do teclado. O carrinho vai aonde você mandar — e cada produto bom que cair dentro vira pontos.' },
+      { t: '❤ SUAS 5 VIDAS', d: 'Você começa com 5 corações. Perde 1 quando <b>deixa um produto bom cair no chão</b> ou quando <b>pega o Papel Comum</b>. Zerou os corações? Fim de jogo.' },
+      { t: '🧻 O VILÃO', d: 'O <b>Papel Comum</b> é aquele rolinho cinza rabugento que fica te encarando. Não caia na provocação: pegar ele custa <b>100 pontos e 1 coração</b>. Desvia!' },
+      { t: '💰 A TABELA DE PONTOS', d: 'Plus Folhas Simples e Guardanapos: <b>100</b> · Carinho Premium, Leve 12, Leve 16, Plus 60m e Toalhas Bom Pety: <b>150</b> · Carinho Olé e Toalhas Classy: <b>200</b> · Carinho Premium Soft: <b>250</b>.' },
+      { t: '✨ OS DOURADOS', d: 'Olé, Classy e Premium Soft caem com uma <b>aura dourada</b>. Pegue <b>2 dourados</b> e recupere <b>1 coração</b> (máximo de 5). São a sua farmácia no meio do caos.' },
+      { t: '💛 O CARINHÔMETRO', d: 'Mede a sua sequência de acertos. A cada <b>5 seguidos</b>, o multiplicador sobe (2×, 3×, até <b>4×</b> os pontos!). Deixou um produto bom cair? Zera tudo. E o prêmio: <b>25 acertos seguidos = +1 coração</b>.' },
+      { t: '⭐ MODO COPAPA', d: 'Uma única vez por partida, o <b>logo azul da COPAPA</b> desce flutuando. Pegue: por <b>8 segundos</b> o carrinho brilha em ouro e fica <b>invencível</b> — o Papel Comum rebate pra longe sem tirar nada de você. Aproveite pra passar por cima de tudo!' },
+      { t: '🕐 NÍVEIS', d: 'A cada <b>25 segundos</b> sobe um nível, anunciado na tela — e a velocidade aumenta sempre. Não existe nível máximo: existe o seu limite.' },
+      { t: '🌙 A NOITE', d: 'Em alguns níveis o mundo vira <b>negativo</b> (preto e branco) por 18 segundos, estilo fliperama antigo. Respire, foque nos contornos e sobreviva até o dia voltar.' },
+      { t: '💨 EVENTOS-SURPRESA', d: '<b>VENTANIA</b>: os produtos voam de lado, cada um pra um canto. <b>PAPELADA</b>: chuva 3× mais intensa. <b>FESTIVAL PREMIUM</b>: só cai a linha Premium — hora de lotar o carrinho e recuperar corações.' },
+      { t: '🏆 O RANKING', d: 'Vale a sua <b>melhor pontuação de todos os tempos</b>, registrada pelo seu e-mail (que <b>nunca</b> aparece no ranking). Você só sai do lugar se superar a si mesmo. Empate? Fica na frente quem marcou primeiro.' },
+      { t: '👩 A CARINA', d: 'Sua torcida oficial! Ela comemora seus recordes, avisa quando os corações estão no fim e, claro, te convida pra seguir a <b>@linhacarinho</b> no Instagram. 💙' }
+    ].map(function(s){ return '<div style="margin-top:12px"><div style="font-family:var(--fonte-display,inherit);color:#f5c542;letter-spacing:.08em;font-size:clamp(13px,2.2vmin,17px);margin-bottom:3px;text-align:left">' + s.t + '</div><div style="font-size:clamp(13px,2.2vmin,16px);line-height:1.55;text-align:left;color:#eef3ff">' + s.d + '</div></div>'; }).join('');
   document.body.appendChild(fundoRegras);
   document.body.appendChild(cardRegras);
   function abrirRegras(){
