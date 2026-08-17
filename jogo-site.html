@@ -1417,26 +1417,45 @@ setInterval(function(){
     }
   }, true);
 })();
-/* top 5 na tela inicial */
+/* top 10 na tela inicial + sua posicao no historico */
 (function(){
   var chave = (document.documentElement.innerHTML.match(/AIza[\w-]{30,}/) || [null])[0];
   if (!chave) return;
-  var urlQ = 'https://firestore.googleapis.com/v1/projects/copapa-corrida/databases/(default)/documents:runQuery?key=' + chave;
+  var base = 'https://firestore.googleapis.com/v1/projects/copapa-corrida/databases/(default)/documents';
+  var urlQ = base + ':runQuery?key=' + chave;
+  var urlA = base + ':runAggregationQuery?key=' + chave;
   var painel = document.createElement('div');
-  painel.id = 'top5-site';
-  painel.style.cssText = 'display:none;position:fixed;left:50%;bottom:14px;transform:translateX(-50%);z-index:60;background:rgba(6,16,36,.82);border:1px solid rgba(245,197,66,.55);border-radius:14px;padding:10px 22px;color:#eef3ff;font-family:inherit;text-align:center;max-width:92vw;backdrop-filter:blur(3px)';
-  document.body.appendChild(painel);
-  var dados = [];
+  painel.id = 'top10-site';
+  painel.style.cssText = 'display:none;margin:16px auto 0;width:min(92vw,430px);background:rgba(6,16,36,.86);border:1px solid rgba(245,197,66,.55);border-radius:14px;padding:12px 18px;color:#eef3ff;text-align:center;font-family:inherit';
+  var dados = [], minhaLinha = '';
   function desenhar(){
     if (!dados.length){ painel.style.display = 'none'; return; }
     var linhas = dados.map(function(l, i){
       var pos = ['🥇','🥈','🥉'][i] || (i + 1) + 'º';
-      return '<div style="display:flex;justify-content:space-between;gap:18px;font-size:clamp(12px,1.9vmin,16px);line-height:1.7"><span>' + pos + ' ' + l.nome.replace(/[&<>]/g, '') + '</span><b style="color:#f5c542">' + l.pontos.toLocaleString('pt-BR') + '</b></div>';
+      return '<div style="display:flex;justify-content:space-between;gap:16px;font-size:clamp(12px,1.8vmin,15px);line-height:1.65"><span style="white-space:nowrap;overflow:hidden;text-overflow:ellipsis;max-width:70%">' + pos + ' ' + l.nome.replace(/[&<>]/g,'') + '</span><b style="color:#f5c542">' + l.pontos.toLocaleString('pt-BR') + '</b></div>';
     }).join('');
-    painel.innerHTML = '<div style="color:#f5c542;font-weight:800;letter-spacing:.1em;font-size:clamp(11px,1.7vmin,14px);margin-bottom:4px">🏆 TOP 5 — QUEM VOCÊ VAI SUPERAR?</div>' + linhas;
+    painel.innerHTML = '<div style="color:#f5c542;font-weight:800;letter-spacing:.1em;font-size:clamp(11px,1.7vmin,14px);margin-bottom:5px">🏆 TOP 10 DE TODOS OS TEMPOS</div>' + linhas + minhaLinha;
+    painel.style.display = 'block';
+  }
+  function contar(filtro){
+    var sq = { from: [{collectionId:'ranking_site'}] };
+    if (filtro) sq.where = { fieldFilter: { field: {fieldPath:'pontos'}, op: 'GREATER_THAN', value: {integerValue: String(filtro)} } };
+    return fetch(urlA, { method:'POST', headers:{'Content-Type':'application/json'}, body: JSON.stringify({ structuredAggregationQuery: { structuredQuery: sq, aggregations: [{ alias:'n', count:{} }] } }) })
+      .then(function(r){ return r.json(); })
+      .then(function(rs){ try { return Number(rs[0].result.aggregateFields.n.integerValue); } catch(e){ return null; } });
+  }
+  function minhaPosicao(){
+    var melhor = null;
+    try { melhor = JSON.parse(localStorage.getItem('copapa-site-melhor') || 'null'); } catch(e){}
+    if (!melhor || !melhor.pontos){ minhaLinha = ''; return Promise.resolve(); }
+    return Promise.all([contar(melhor.pontos), contar(null)]).then(function(v){
+      if (v[0] == null || v[1] == null){ minhaLinha = ''; return; }
+      var pos = v[0] + 1;
+      minhaLinha = '<div style="margin-top:7px;padding-top:6px;border-top:1px dashed rgba(245,197,66,.4);font-size:clamp(12px,1.8vmin,15px)">Sua melhor marca: <b style="color:#f5c542">' + Number(melhor.pontos).toLocaleString('pt-BR') + '</b> — ' + pos + 'º de ' + v[1] + ' no histórico</div>';
+    });
   }
   function buscar(){
-    fetch(urlQ, { method:'POST', headers:{'Content-Type':'application/json'}, body: JSON.stringify({ structuredQuery:{ from:[{collectionId:'ranking_site'}], orderBy:[{field:{fieldPath:'pontos'}, direction:'DESCENDING'}], limit: 8 } }) })
+    fetch(urlQ, { method:'POST', headers:{'Content-Type':'application/json'}, body: JSON.stringify({ structuredQuery:{ from:[{collectionId:'ranking_site'}], orderBy:[{field:{fieldPath:'pontos'}, direction:'DESCENDING'}], limit: 14 } }) })
       .then(function(r){ return r.ok ? r.json() : []; })
       .then(function(rs){
         var linhas = (rs || []).filter(function(x){ return x.document; }).map(function(x){
@@ -1446,20 +1465,39 @@ setInterval(function(){
                    quando: (f.criadoEm && (f.criadoEm.integerValue || f.criadoEm.timestampValue)) || '' };
         });
         linhas.sort(function(a,b){ return b.pontos - a.pontos || (a.quando < b.quando ? -1 : 1); });
-        dados = linhas.slice(0, 5);
-        desenhar();
+        dados = linhas.slice(0, 10);
+        minhaPosicao().then(desenhar, desenhar);
       }).catch(function(){});
   }
-  function atracaoVisivel(){
+  function encaixar(){
     var bts = document.querySelectorAll('button');
     for (var i = 0; i < bts.length; i++){
-      if (bts[i].offsetParent !== null && /TOQUE PARA JOGAR/i.test(bts[i].innerText)) return true;
+      if (/TOQUE PARA JOGAR/i.test(bts[i].innerText)){
+        bts[i].insertAdjacentElement('afterend', painel);
+        return true;
+      }
     }
     return false;
   }
+  if (!encaixar()){
+    var tent = setInterval(function(){ if (encaixar()) clearInterval(tent); }, 700);
+  }
+  var rodandoAntes = false;
   setInterval(function(){
-    painel.style.display = (atracaoVisivel() && dados.length) ? 'block' : 'none';
-  }, 800);
+    try {
+      var r = (typeof jogo !== 'undefined') && jogo.rodando;
+      if (rodandoAntes && !r && jogo.pontos > 0){
+        var atual = null;
+        try { atual = JSON.parse(localStorage.getItem('copapa-site-melhor') || 'null'); } catch(e){}
+        if (!atual || jogo.pontos > atual.pontos){
+          var campo = document.getElementById('cad-nome');
+          localStorage.setItem('copapa-site-melhor', JSON.stringify({ pontos: jogo.pontos, nome: campo ? campo.value : '' }));
+        }
+        buscar();
+      }
+      rodandoAntes = r;
+    } catch(e){}
+  }, 900);
   buscar();
   setInterval(buscar, 300000);
 })();
