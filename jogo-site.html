@@ -1693,13 +1693,20 @@ setInterval(function(){
     fundoRegras.style.opacity = '0'; cardRegras.style.opacity = '0';
     setTimeout(function(){ fundoRegras.style.display = 'none'; cardRegras.style.display = 'none'; }, 320);
   }
-  fundoRegras.addEventListener('click', fecharRegras);
-  cardRegras.addEventListener('click', function(e){ if (e.target && e.target.id === 'bt-fechar-regras') fecharRegras(); });
+  ['pointerdown','touchstart','mousedown','pointerup','touchend'].forEach(function(ev){
+    fundoRegras.addEventListener(ev, function(e){ e.stopPropagation(); });
+    cardRegras.addEventListener(ev, function(e){ e.stopPropagation(); });
+  });
+  fundoRegras.addEventListener('click', function(e){ e.stopPropagation(); fecharRegras(); });
+  cardRegras.addEventListener('click', function(e){ e.stopPropagation(); if (e.target && e.target.id === 'bt-fechar-regras') fecharRegras(); });
   var btRegras = document.createElement('button');
   btRegras.type = 'button';
   btRegras.textContent = '📜 Regras do jogo';
   btRegras.style.cssText = 'display:block;margin:10px auto 0;background:transparent;border:1px solid rgba(245,197,66,.5);color:#f5c542;font-family:var(--fonte-corpo,inherit);font-weight:700;font-size:clamp(12px,1.9vmin,15px);padding:7px 20px 5px;border-radius:999px;cursor:pointer';
-  btRegras.addEventListener('click', abrirRegras);
+  ['pointerdown','touchstart','mousedown','pointerup','touchend'].forEach(function(ev){
+    btRegras.addEventListener(ev, function(e){ e.stopPropagation(); });
+  });
+  btRegras.addEventListener('click', function(e){ e.stopPropagation(); e.preventDefault(); abrirRegras(); });
   var tentaRegras = setInterval(function(){
     var painelTop = document.getElementById('top10-site');
     if (painelTop && painelTop.parentElement){ painelTop.insertAdjacentElement('afterend', btRegras); clearInterval(tentaRegras); }
@@ -1718,6 +1725,10 @@ setInterval(function(){
     var email = document.createElement('input');
     email.type = 'email'; email.id = 'cad-email'; email.placeholder = 'Ex.: voce@email.com';
     email.autocomplete = 'email'; email.className = nomeInp.className;
+    try {
+      var csN = getComputedStyle(nomeInp);
+      email.style.cssText = 'display:block;width:100%;box-sizing:border-box;background:' + csN.backgroundColor + ';border:' + csN.borderTopWidth + ' ' + csN.borderTopStyle + ' ' + csN.borderTopColor + ';border-radius:' + csN.borderRadius + ';padding:' + csN.padding + ';font-size:' + csN.fontSize + ';font-family:inherit;color:' + csN.color + ';margin-top:6px';
+    } catch(err){}
     email.value = localStorage.getItem('copapa-site-email') || '';
     rotulo.appendChild(email);
     var lgpd = document.createElement('label');
@@ -1835,7 +1846,7 @@ setInterval(function(){
       rodavaAntes = true;
 
       if (!jogo.logoCaiu){
-        if (!jogo.logoQuando) jogo.logoQuando = 18 + Math.random() * 22;
+        if (!jogo.logoQuando) jogo.logoQuando = 45 + Math.random() * 30;
         if (jogo.tempo >= jogo.logoQuando){
           jogo.logoCaiu = true;
           try {
