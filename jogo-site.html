@@ -1630,7 +1630,7 @@ setInterval(function(){
         jaFeliz = true;
         mostrarCarina(1, 'Você tá voando! ✨', 4);
       }
-      if (jogo.vidas === 1 && vidasAntes > 1 && avisosVida < 2){
+      if (jogo.vidas === 1 && vidasAntes !== 1 && avisosVida < 2){
         avisosVida++;
         mostrarCarina(2, 'Cuidado! Suas vidas estão acabando! 💔 Pegue os dourados!', 4);
       }
@@ -1638,12 +1638,16 @@ setInterval(function(){
     } catch(e){}
   }, 250);
 
-  /* esconder a Carina 3 quando voltar pra tela inicial */
+  /* esconder a Carina 3 quando voltar pra tela inicial (checando se o botao esta realmente no topo) */
   setInterval(function(){
     if (!fimMostrado) return;
     var bts = document.querySelectorAll('button');
     for (var i = 0; i < bts.length; i++){
-      if (bts[i].offsetParent !== null && /TOQUE PARA JOGAR/i.test(bts[i].innerText)){ esconderCarina(); fimMostrado = false; return; }
+      var b = bts[i];
+      if (b.offsetParent === null || !/TOQUE PARA JOGAR/i.test(b.innerText)) continue;
+      var r = b.getBoundingClientRect();
+      var topo = document.elementFromPoint(r.left + r.width / 2, r.top + r.height / 2);
+      if (topo && (topo === b || b.contains(topo))){ esconderCarina(); fimMostrado = false; return; }
     }
   }, 1200);
 })();
