@@ -1442,7 +1442,7 @@ setInterval(function(){
   var urlA = base + ':runAggregationQuery?key=' + chave;
   var painel = document.createElement('div');
   painel.id = 'top10-site';
-  painel.style.cssText = 'display:none;margin:16px auto 0;width:min(92vw,430px);background:rgba(6,16,36,.86);border:1px solid rgba(245,197,66,.55);border-radius:14px;padding:12px 18px;color:#eef3ff;text-align:center;font-family:inherit';
+  painel.style.cssText = 'display:none;margin:16px auto 0;width:min(92vw,430px);max-height:34vh;overflow-y:auto;background:rgba(6,16,36,.86);border:1px solid rgba(245,197,66,.55);border-radius:14px;padding:12px 18px;color:#eef3ff;text-align:center;font-family:inherit';
   var dados = [], minhaLinha = '';
   function desenhar(){
     if (!dados.length){ painel.style.display = 'none'; return; }
@@ -1550,14 +1550,14 @@ setInterval(function(){
   carina.style.cssText = 'display:none;position:fixed;left:0;right:0;bottom:0;z-index:998;pointer-events:none;align-items:flex-end;padding:0 10px;opacity:0;transform:translateY(34px);transition:opacity .35s ease,transform .35s ease';
   var carinaImg = document.createElement('img');
   carinaImg.alt = 'Carina';
-  carinaImg.style.cssText = 'height:clamp(150px,36vmin,270px);width:auto;flex:0 0 auto;filter:drop-shadow(0 6px 14px rgba(0,0,0,.5));position:relative;z-index:1';
+  carinaImg.style.cssText = 'height:clamp(190px,46vmin,360px);width:auto;flex:0 0 auto;filter:drop-shadow(0 6px 14px rgba(0,0,0,.5));position:relative;z-index:1';
   var caixa = document.createElement('div');
-  caixa.style.cssText = 'flex:1;min-width:0;background:rgba(6,16,36,.93);border:2px solid rgba(245,197,66,.85);border-radius:16px;padding:12px 16px 14px;margin:0 0 18px -20px;box-shadow:0 6px 22px rgba(0,0,0,.5)';
+  caixa.style.cssText = 'flex:0 1 auto;min-width:0;max-width:min(64vw,560px);background:rgba(6,16,36,.93);border:2px solid rgba(245,197,66,.85);border-radius:16px;padding:14px 20px 16px;margin:0 0 26px -20px;box-shadow:0 6px 22px rgba(0,0,0,.5)';
   var etiqueta = document.createElement('div');
   etiqueta.textContent = 'CARINA';
   etiqueta.style.cssText = 'display:inline-block;background:#f5c542;color:#0a1e4a;font-weight:900;letter-spacing:.1em;padding:2px 14px;border-radius:8px;font-size:clamp(11px,1.8vmin,14px);margin-bottom:7px';
   var balao = document.createElement('div');
-  balao.style.cssText = 'color:#eef3ff;font-weight:700;font-size:clamp(15px,2.6vmin,20px);line-height:1.4;overflow-wrap:break-word';
+  balao.style.cssText = 'color:#eef3ff;font-weight:700;font-size:clamp(16px,3vmin,23px);line-height:1.45;overflow-wrap:break-word';
   caixa.appendChild(etiqueta);
   caixa.appendChild(balao);
   carina.appendChild(carinaImg);
@@ -1582,6 +1582,110 @@ setInterval(function(){
     setTimeout(function(){ carina.style.display = 'none'; }, 380);
   }
   window.__carinaDemo = function(n, msg){ mostrarCarina(n, msg || 'Mensagem de teste da Carina!', 8, false); };
+
+  /* ---- e-mail + LGPD no cadastro ---- */
+  function montarCampos(){
+    var form = document.getElementById('form-cadastro');
+    var nomeInp = document.getElementById('cad-nome');
+    if (!form || !nomeInp || document.getElementById('cad-email')) return;
+    var btEnvio = form.querySelector('button[type="submit"]') || form.querySelector('button');
+    var rotuloNome = nomeInp.closest('label');
+    var rotulo = document.createElement('label');
+    if (rotuloNome) rotulo.className = rotuloNome.className;
+    rotulo.appendChild(document.createTextNode('E-mail (guarda a sua melhor pontuação)'));
+    var email = document.createElement('input');
+    email.type = 'email'; email.id = 'cad-email'; email.placeholder = 'Ex.: voce@email.com';
+    email.autocomplete = 'email'; email.className = nomeInp.className;
+    email.value = localStorage.getItem('copapa-site-email') || '';
+    rotulo.appendChild(email);
+    var lgpd = document.createElement('label');
+    lgpd.style.cssText = 'display:flex;gap:8px;align-items:flex-start;margin:10px 0 4px;font-size:clamp(11px,1.8vmin,13px);color:#b9c6e8;text-align:left;line-height:1.4;cursor:pointer';
+    var ck = document.createElement('input');
+    ck.type = 'checkbox'; ck.id = 'cad-consent'; ck.style.cssText = 'margin-top:2px;flex:0 0 auto';
+    ck.checked = localStorage.getItem('copapa-site-consent') === '1';
+    lgpd.appendChild(ck);
+    lgpd.appendChild(document.createTextNode('Concordo que meu apelido apareça no ranking público e que a COPAPA use meu e-mail para identificar minha pontuação e enviar novidades (LGPD — Lei 13.709/2018). O e-mail nunca aparece no ranking.'));
+    if (btEnvio){ form.insertBefore(rotulo, btEnvio); form.insertBefore(lgpd, btEnvio); }
+    else { form.appendChild(rotulo); form.appendChild(lgpd); }
+  }
+  montarCampos();
+  setInterval(montarCampos, 1500);
+  function avisoCadastro(msg){
+    var v = document.getElementById('aviso-cad-site');
+    if (v) v.remove();
+    var d = document.createElement('div');
+    d.id = 'aviso-cad-site';
+    d.textContent = msg;
+    d.style.cssText = 'color:#ffb3b3;font-weight:700;margin-top:8px;text-align:center';
+    var em = document.getElementById('cad-email');
+    if (em && em.parentElement) em.parentElement.appendChild(d);
+    setTimeout(function(){ var x = document.getElementById('aviso-cad-site'); if (x) x.remove(); }, 5000);
+  }
+  window.addEventListener('submit', function(e){
+    var form = e.target;
+    if (!form || form.id !== 'form-cadastro') return;
+    var em = document.getElementById('cad-email');
+    var ck = document.getElementById('cad-consent');
+    var val = em ? em.value.trim().toLowerCase() : '';
+    if (!/^[^\s@]+@[^\s@]+\.[^\s@]{2,}$/.test(val)){
+      e.preventDefault(); e.stopImmediatePropagation();
+      avisoCadastro('Digite um e-mail válido para salvar sua pontuação!');
+      if (em) em.focus();
+      return;
+    }
+    if (ck && !ck.checked){
+      e.preventDefault(); e.stopImmediatePropagation();
+      avisoCadastro('Marque o aceite da LGPD para jogar!');
+      return;
+    }
+    localStorage.setItem('copapa-site-email', val);
+    localStorage.setItem('copapa-site-consent', '1');
+    if (!window.__viuIntroCarina){
+      e.preventDefault(); e.stopImmediatePropagation();
+      window.__viuIntroCarina = true;
+      mostrarCarina(1, 'Oi! Eu sou a <b>Carina</b>! 💙 Antes de começar, já segue a <a href="https://instagram.com/linhacarinho" target="_blank" rel="noopener" style="color:#f5c542;text-decoration:underline;pointer-events:auto">@linhacarinho</a> no Instagram?<br><button id="bt-carina-avancar" type="button" style="margin-top:12px;background:#1f9d55;color:#fff;border:none;border-radius:999px;padding:10px 26px;font-weight:800;font-size:inherit;cursor:pointer;pointer-events:auto">COMEÇAR O JOGO ▶</button>', 0, true);
+      setTimeout(function(){
+        var b = document.getElementById('bt-carina-avancar');
+        if (b) b.addEventListener('click', function(){
+          esconderCarina();
+          var f = document.getElementById('form-cadastro');
+          if (f) f.requestSubmit ? f.requestSubmit() : f.submit();
+        });
+      }, 80);
+    }
+  }, true);
+
+  /* ---- uma entrada por usuário: melhor pontuação via e-mail + mailing ---- */
+  (function(){
+    var fetchOrig = window.fetch;
+    window.fetch = function(url, opts){
+      try {
+        if (typeof url === 'string' && opts && opts.method === 'POST' && url.indexOf('/documents/ranking_site?') !== -1){
+          var em = (localStorage.getItem('copapa-site-email') || '').trim().toLowerCase();
+          if (em){
+            var h = 5381;
+            for (var i = 0; i < em.length; i++) h = (((h << 5) + h) + em.charCodeAt(i)) >>> 0;
+            var id = 'u' + h.toString(36);
+            try {
+              var corpo = JSON.parse(opts.body || '{}');
+              var nome = corpo.fields && corpo.fields.nome ? corpo.fields.nome.stringValue : 'Jogador';
+              var urlC = url.replace('/documents/ranking_site?', '/documents/contatos_site/' + id + '?');
+              fetchOrig(urlC, { method: 'PATCH', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ fields: { nome: { stringValue: nome }, email: { stringValue: em }, criadoEm: { integerValue: String(Date.now()) } } }) }).catch(function(){});
+            } catch(err){}
+            var novo = url.replace('/documents/ranking_site?', '/documents/ranking_site/' + id + '?');
+            var opts2 = {};
+            for (var k in opts) opts2[k] = opts[k];
+            opts2.method = 'PATCH';
+            return fetchOrig(novo, opts2).then(function(resp){
+              if (resp.status === 403) return new Response('{"ok":true}', { status: 200, headers: { 'Content-Type': 'application/json' } });
+              return resp;
+            });
+          }
+        }
+      } catch(err){}
+      return fetchOrig.apply(this, arguments);
+    };
+  })();
 
   var nivelAtual = 0, eventoMarcado = null, eventoFim = 0, rodavaAntes = false, noiteFim = 0;
   var jaFeliz = false, jaRecorde = false, avisosVida = 0, vidasAntes = 5, fimMostrado = false;
